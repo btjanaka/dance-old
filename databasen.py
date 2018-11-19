@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Script for filtering out trivalent nitrogen molecules from the database.
 # See README for usage.
 
@@ -35,7 +35,7 @@ def generate_mol2files(input_dirs: [str]) -> [str]:
     the dataset can have millions of files.
     """
     for d in input_dirs:
-        for f in glob.iglob(f"{d}/*.mol2"):
+        for f in glob.iglob(d + "/*.mol2"):
             yield f
 
 
@@ -69,7 +69,7 @@ def generate_output_file(out_filename: str, input_dirs: [str]):
 
 if __name__ == "__main__":
     out_filename, input_dirs = parse_commandline_flags()
-    print_status(f"Filtering molecules in directories {input_dirs}")
-    print_status(f"Writing to {out_filename}")
+    print_status("Filtering molecules in directories", input_dirs)
+    print_status("Writing to", out_filename)
     generate_output_file(out_filename, input_dirs)
     print_status("Done")
