@@ -69,7 +69,7 @@ def generate_output_file(out_filename: str, input_dirs: [str]):
 
 if __name__ == "__main__":
     out_filename, input_dirs = parse_commandline_flags()
-    print_status("Filtering molecules in directories", input_dirs)
-    print_status("Writing to", out_filename)
+    print_status("Filtering molecules in directories " + " ".join(input_dirs))
+    print_status("Writing to " + out_filename)
     generate_output_file(out_filename, input_dirs)
     print_status("Done")
