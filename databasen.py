@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-# Script for filtering out trivalent nitrogen molecules from the database.
-# See README for usage.
+# Author: Bryon Tjanaka
+# Purpose: Filters mol2 files in a list of directories to find molecules with
+#          trivalent nitrogens within them. Stores these filtered molecules as
+#          SMILES strings.
+# Usage: python databasen.py [-h] [-o OUTPUT] DIRS [DIRS ...]
 
+import argparse
 import glob
 import sys
 from openeye import oechem
-
-# Constants
-USAGE_MSG = "Usage: databasen.py OUTPUT_FILENAME [INPUT_DIRS...]"
 
 
 def print_status(status: str):
@@ -16,7 +17,7 @@ def print_status(status: str):
 
 
 def parse_commandline_flags() -> (str, [str]):
-    """Handles all parsing of command line flags.
+    """Uses argparse to handle all parsing of command line flags.
 
     Returns:
         name of the output file to which to write the SMILES
@@ -24,8 +25,25 @@ def parse_commandline_flags() -> (str, [str]):
     Raises:
         IndexError: not enough arguments were passed in
     """
-    if len(sys.argv) == 1: raise IndexError(USAGE_MSG)
-    return sys.argv[1], sys.argv[2:]
+    parser = argparse.ArgumentParser(
+        description=
+        "Finds molecules with trivalent nitrogens in a directory and stores them as SMILES strings."
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        help=
+        "the name of an output file for the SMILES strings - defaults to output.smi"
+    )
+    parser.set_defaults(output="output.smi")
+
+    req_args = parser.add_argument_group("required arguments")
+    req_args.add_argument(
+        "DIRS", nargs='+', help="directories with mol2 files to be filtered")
+
+    args = parser.parse_args()
+
+    return args.output, args.DIRS
 
 
 def generate_mol2files(input_dirs: [str]) -> [str]:
@@ -69,7 +87,7 @@ def generate_output_file(out_filename: str, input_dirs: [str]):
 
 if __name__ == "__main__":
     out_filename, input_dirs = parse_commandline_flags()
-    print_status("Filtering molecules in directories " + " ".join(input_dirs))
+    print_status("Filtering molecules in directories " + str(input_dirs))
     print_status("Writing to " + out_filename)
     generate_output_file(out_filename, input_dirs)
     print_status("Done")
