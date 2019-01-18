@@ -188,8 +188,9 @@ class DanceMoleculeFilter:
             status = oequacpac.OEAssignPartialCharges(
                 charged_copy, oequacpac.OECharges_AM1BCCSym, False, False)
             if not status:
-                raise RuntimeError(
-                    f"OEAssignPartialCharges returned error code {status}")
+                logging.debug(
+                    f"failed to assign partial charges to {mol.GetTitle()}")
+                return -1
 
             # Copy over bonds and charges from the charged copy to our copy
             for charged_atom, atom in zip(charged_copy.GetAtoms(),
