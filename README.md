@@ -4,7 +4,6 @@
 
 - [Usage](#usage)
   * [Example](#example)
-  * [As a Library](#as-a-library)
 - [A Note on Logging](#a-note-on-logging)
 
 <!-- tocstop -->
@@ -27,7 +26,7 @@ implemented.*
 Below is the help message for dance.py. Adding `python` before the
 invocation of dance.py is optional.
 ```
-usage: dance.py [-h] [--mol2dirs MOL2DIRS] [--output FILENAME.smi]
+usage: dance.py [-h] [--mol2dirs MOL2DIRS] [--output-mols FILENAME.smi]
                 [--log LEVEL]
 
 Filters molecules stored in mol2 files from a list of directories and stores
@@ -37,8 +36,9 @@ optional arguments:
   -h, --help            show this help message and exit
   --mol2dirs MOL2DIRS   a comma-separated list of directories with mol2 files
                         to be filtered (default: )
-  --output FILENAME.smi
-                        location of output file (default: output.smi)
+  --output-mols FILENAME.smi
+                        location of SMILES file holding final filtered
+                        molecules (default: output-mols.smi)
   --log LEVEL           logging level - one of DEBUG, INFO, WARNING, ERROR,
                         and CRITICAL - See
                         https://docs.python.org/3/howto/logging.html for more
@@ -51,20 +51,6 @@ dance.py --mol2dirs dir1,dir2,dir3 --output ouput.smi --log debug
 ```
 Reads in molecules from dir1, dir2, and dir3, filters them, and writes the
 results to output.smi. Log messages as low as DEBUG are printed to stderr.
-
-### As a Library
-It is possible to use dance.py as a library. Simply import the module,
-construct a DanceMoleculeFilter object, call the `.generate()` method, and you
-will have filtered the appropriate molecules and stored them in a file.
-```Python
-import dance
-
-mol2dirs = ["dir1", "dir2"]
-output = "output.smi"
-
-dance_filter = dance.DanceMoleculeFilter(mol2dirs, output)
-dance_filter.generate()
-```
 
 ## A Note on Logging
 Python's standard logging library is used to write log messages of varying
