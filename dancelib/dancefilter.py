@@ -1,26 +1,45 @@
-"""Provides a class which is used to perform molecule filtering."""
+"""Provides a class for performing molecule filtering."""
 
-from dancelib import danceutil
 import glob
 import logging
+import math
 from openeye import oechem
 from openeye import oequacpac
+from dancelib import danceprops
+
+#
+# Constants
+#
+
+# Trivalent Nitrogen checker - instead of repeatedly constructing this class
+IS_TRI_N = oechem.OEIsInvertibleNitrogen()
+
+# Object for calculating AM1 charges - instead of reconstructing it everywhere
+AM1 = oequacpac.OEAM1()
 
 
 class DanceFilter:
-    """
-    DanceFilter is a class for performing all the various filtering
-    actions. To use, instantiate it with the list of mol2dirs and output. Then
-    call the generate() method to filter the molecules and write them to a file
-    as SMILES strings. After generate() has been called, the molecules will each
-    have the WIBERG_MOL data (where WIBERG_MOL is defined in danceutil) set
-    to the Wiberg bond order. mol() can then be called to access all the
-    molecules.
+    """Performs various filtering actions on molecules
+
+    After initializing DanceFilter, run it by calling the run() method.
+    After run() has been called:
+        - each molecule will have a danceprops.DANCE_PROPS_KEY tag (see
+          danceprops.py for more info)
+        - the molecules and their properties will be available via the
+          get_data() method - the molecules returned will be sorted by Wiberg
+          bond order and only have one trivalent nitrogen
+        - a SMILES file with the molecules will have been written at the
+          location specified upon initialization
+    Note that the class is only meant to be run once, and attempting to call
+    run() again will result in a RuntimeError.
 
     Attributes:
         _mol2dirs: list of names of directories with mol2 files
         _output: the name of the output file to which to write the molecules
         _mols: a list storing the molecules the class is currently handling
+        _properties: a list storing properties of the molecules (see
+                     danceprops.py for more info)
+        _run_yet: whether run() has been called yet
     """
 
     #
@@ -31,18 +50,25 @@ class DanceFilter:
         self._mol2dirs = mol2dirs
         self._output = output
         self._mols = []
+        self._properties = []
+        self._run_yet = False
 
-    def generate(self):
-        """Pushes all the molecules through the various filtering steps."""
+    def run(self):
+        """Pushes all the molecules through the various filtering steps"""
+        if self._run_yet:
+            raise RuntimeError("This DanceFilter has already been run")
+        self._run_yet = True
+
         logging.info("STARTING FILTERING")
         self._filter_tri_n()
-        self._apply_wiberg()
+        self._apply_properties()
+        self._sort_by_wiberg()
         self._write_to_smiles_file()
         logging.info("FINISHED FILTERING")
 
-    def mols(self) -> [oechem.OEMol]:
-        """Accessor for the molecules stored in this class."""
-        return self._mols
+    def get_data(self) -> ([oechem.OEMol], [danceprops.DanceProperties]):
+        """Return the molecules and properties associated with this class."""
+        return self._mols, self._properties
 
     #
     # Private
@@ -57,22 +83,31 @@ class DanceFilter:
                      f"in directories {self._mol2dirs}")
 
         for mol2file in self._generate_mol2files():
-            mol, ok = self._check_one_molecule(mol2file)
-            logging.debug(f"tri-n-check: molecule {mol2file}: {ok}")
-            if ok: self._mols.append(mol)
+            mol, valid = self._check_one_molecule(mol2file)
+            logging.debug(f"tri-n-check: molecule {mol2file}: {valid}")
+            if valid:
+                self._mols.append(mol)
 
-    def _apply_wiberg(self):
-        """
-        Adds Wiberg bond order annotations and sorts the molecules by them.
-        """
-        logging.info("Annotating molecules with Wiberg bond order")
+    def _apply_properties(self):
+        """Adds various properties to the molecules"""
+        logging.info("Calculating properties for molecules")
 
         for mol in self._mols:
-            mol.SetData(danceutil.WIBERG_MOL, self._calc_wiberg(mol))
-            logging.debug(f"wiberg-annotation: molecule {mol.GetTitle()}: "
-                          f"{mol.GetData(danceutil.WIBERG_MOL)}")
+            danceprops.add_dance_property(mol, self._calc_properties(mol),
+                                          self._properties)
+            logging.debug(f"adding properties to molecule {mol.GetTitle()}")
 
-        self._mols.sort(key=lambda m: m.GetData(danceutil.WIBERG_MOL))
+    def _sort_by_wiberg(self):
+        """
+        Sorts the molecules by total Wiberg bond order around the trivalent
+        nitrogen.
+        """
+        logging.info("Sorting molecules by Wiberg bond order")
+
+        self._mols.sort(
+            key=
+            lambda m: danceprops.get_dance_property(m, self._properties).tri_n_bond_order
+        )
 
     def _write_to_smiles_file(self):
         """Writes the molecules to the SMILES file"""
@@ -97,7 +132,8 @@ class DanceFilter:
             for mol2file in glob.iglob(mol2dir + "/*.mol2"):
                 yield mol2file
 
-    def _check_one_molecule(self, mol2file: str) -> (oechem.OEMol, bool):
+    @staticmethod
+    def _check_one_molecule(mol2file: str) -> (oechem.OEMol, bool):
         """Checks if the molecule in the given file has only one trivalent
         nitrogen.
 
@@ -110,43 +146,52 @@ class DanceFilter:
         mol = oechem.OEMol()
         oechem.OEReadMolecule(istream, mol)
 
-        tri_n_count = sum(
-            1 if danceutil.IS_TRI_N(atom) else 0 for atom in mol.GetAtoms())
+        tri_n_count = sum(1 if IS_TRI_N(atom) else 0 for atom in mol.GetAtoms())
         return mol, tri_n_count == 1
 
-    def _calc_wiberg(self, mol: oechem.OEMol) -> float:
+    @staticmethod
+    def _calc_properties(mol: oechem.OEMol) -> danceprops.DanceProperties:
         """
-        Calculates the sum of the Wiberg bond order among the bonds surrounding
-        the trivalent nitrogen in the molecule (there should be only one at this
-        point). Only considers the first conformation of the molecule.
+        Calculates properties of the given molecule and returns a
+        DanceProperties object holding them.
 
         Based on Victoria Lim's am1wib.py - see
         https://github.com/vtlim/misc/blob/master/oechem/am1wib.py
         """
-        total = 0.0
+        props = danceprops.DanceProperties()
+
         for conf in mol.GetConfs():
-            charged_copy = oechem.OEMol(mol)
-            # TODO: Deprecation warning here, switch to OEAssignCharges
-            status = oequacpac.OEAssignPartialCharges(
-                charged_copy, oequacpac.OECharges_AM1BCCSym, False, False)
-            if not status:
+            charged_copy = oechem.OEMol(conf)
+            results = oequacpac.OEAM1Results()
+            if not AM1.CalcAM1(results, charged_copy):
                 logging.debug(
                     f"failed to assign partial charges to {mol.GetTitle()}")
-                return -1
+                return props
 
-            # Copy over bonds and charges from the charged copy to our copy
-            for charged_atom, atom in zip(charged_copy.GetAtoms(),
-                                          mol.GetAtoms()):
-                atom.SetPartialCharge(charged_atom.GetPartialCharge())
-            for charged_bond, bond in zip(charged_copy.GetBonds(),
-                                          mol.GetBonds()):
-                bond.SetData(danceutil.WIBERG_BOND,
-                             charged_bond.GetData(danceutil.WIBERG_BOND))
+            # Sum bond orders, bond lengths, and bond angles
+            for atom in charged_copy.GetAtoms(IS_TRI_N):
+                nbors = list(atom.GetAtoms())  # (neighbors)
+                ang1 = math.degrees(
+                    oechem.OEGetAngle(charged_copy, nbors[0], atom, nbors[1]))
+                ang2 = math.degrees(
+                    oechem.OEGetAngle(charged_copy, nbors[1], atom, nbors[2]))
+                ang3 = math.degrees(
+                    oechem.OEGetAngle(charged_copy, nbors[2], atom, nbors[0]))
+                props.tri_n_bond_angle = ang1 + ang2 + ang3
 
-            # Sum up bond orders around the trivalent nitrogen
-            for atom in conf.GetAtoms(danceutil.IS_TRI_N):
-                for bond in atom.GetBonds():
-                    total += bond.GetData(danceutil.WIBERG_BOND)
+                for nbor in nbors:
+                    bond_order = results.GetBondOrder(atom.GetIdx(),
+                                                      nbor.GetIdx())
+                    bond_length = oechem.OEGetDistance(charged_copy, atom, nbor)
+                    element = nbor.GetAtomicNum()
+
+                    props.tri_n_bonds.append(
+                        danceprops.DanceTriNBond(bond_order, bond_length,
+                                                 element))
+                    props.tri_n_bond_order += bond_order
+                    props.tri_n_bond_length += bond_length
+
                 break  # terminate after one trivalent nitrogen
             break  # terminate after one conformation
-        return total
+
+        return props
