@@ -1,22 +1,22 @@
-"""Provides a class for analyzing and outputting data about molecules."""
+"""Provides a class for saving data about molecules."""
 
 import logging
 from openeye import oechem
 from dancelib import danceprops
 
 
-class DanceAnalyzer:
-    """Saves and analyzes molecule data from DanceFilter.
+class DanceSaver:
+    """Saves molecule data from DanceFilter.
 
     Molecules passed in should have the danceprops.DANCE_PROPS_KEY data set;
     failure to have this results in undefined behavior.
 
-    After initializing DanceAnalyzer with a list of molecules, run it by calling
+    After initializing DanceSaver with a list of molecules, run it by calling
     the run() method. Note that the class is only meant to be run once, and
     attempting to call run() again will result in a RuntimeError.
 
     Attributes:
-        _mols: the molecules which are being analyzed
+        _mols: the molecules which are being saved
         _properties: a list storing properties of the molecules (see
                      danceprops.py for more info)
         _output_tri_n_data: csv file for data about trivalent nitrogens
@@ -38,18 +38,14 @@ class DanceAnalyzer:
         self._run_yet = False
 
     def run(self):
-        """Perform all saving and analysis actions on the molecules"""
+        """Perform all saving actions"""
         if self._run_yet:
-            raise RuntimeError("This DanceAnalyzer has already been run")
+            raise RuntimeError("This DanceSaver has already been run")
         self._run_yet = True
 
-        logging.info("STARTING ANALYSIS")
+        logging.info("STARTING SAVE")
         self._write_to_csv()
-        # TODO: future functions of the analyzer
-        #  self._plot_order_vs_angle()
-        #  self._plot_total_order_vs_length()
-        #  self._plot_individual_order_vs_length()
-        logging.info("FINISHED ANALYSIS")
+        logging.info("FINISHED SAVE")
 
     #
     # Private

@@ -4,7 +4,7 @@
 
 import argparse
 import logging
-from dancelib import danceanalyzer
+from dancelib import dancesaver
 from dancelib import dancefilter
 
 
@@ -91,9 +91,9 @@ def main():
     dfilter = dancefilter.DanceFilter(args["mol2dirs"], args["output_mols"])
     dfilter.run()
     mols, properties = dfilter.get_data()
-    danalyzer = danceanalyzer.DanceAnalyzer(
-        mols, properties, args["output_tri_n_data"], args["output_tri_n_bonds"])
-    danalyzer.run()
+    dsaver = dancesaver.DanceSaver(mols, properties, args["output_tri_n_data"],
+                                   args["output_tri_n_bonds"])
+    dsaver.run()
 
 
 if __name__ == "__main__":
