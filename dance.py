@@ -4,8 +4,8 @@
 
 import argparse
 import logging
-from dancelib import dancesaver
 from dancelib import dancefilter
+from dancelib import dancesaver
 
 
 def parse_commandline_flags() -> {}:
@@ -18,36 +18,27 @@ def parse_commandline_flags() -> {}:
     """
     parser = argparse.ArgumentParser(
         description=(
-            "Filters molecules stored in mol2 files from a list of directories "
-            "and stores them as SMILES strings. Also generates several "
-            "additional files with useful data. Note that for filenames, if "
-            "the appropriate extension is not given, it will be added on."),
+            "Performs various functions for selecting molecules from a "
+            "database. It will do the following based on the mode. "
+            "FILTER - Take in directories of mol2 files, filter out "
+            "molecules with a single trivalent nitrogen, sort them by Wiberg "
+            "bond order, and write them to a file. "
+            "PLOTHIST - Take in data files from the previous step and use "
+            "matplotlib to create histograms of the Wiberg bond orders. "
+            "SELECT - Make a final selection of molecules from the ones "
+            "generated in the first step. "
+            "See README for more info."),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument(
-        "--mol2dirs",
-        default="",
-        metavar="DIR1,DIR2,...",
-        help=
-        "a comma-separated list of directories with mol2 files to be filtered")
-    parser.add_argument(
-        "--output-mols",
-        default="output-mols.smi",
-        metavar="FILENAME.smi",
-        help="location of SMILES file holding final filtered molecules")
-    parser.add_argument(
-        "--output-tri-n-data",
-        default="output-tri-n-data.csv",
-        metavar="FILENAME.csv",
-        help=("location of CSV file holding data about trivalent nitrogens "
-              "(with molecules in the same order as the SMILES file"))
-    parser.add_argument(
-        "--output-tri-n-bonds",
-        default="output-tri-n-bonds.csv",
-        metavar="FILENAME.csv",
-        help=("location of CSV file holding data about individual bonds around "
-              "trivalent nitrogens"))
-    parser.add_argument(
+    mode_agnostic = parser.add_argument_group(
+        "Mode Agnostic args", "Arguments which apply to every mode of DANCE")
+    mode_agnostic.add_argument(
+        "--mode",
+        default="FILTER",
+        metavar="MODE",
+        help=("The mode in which to run DANCE - one of FILTER, PLOTHIST, "
+              "or SELECT. See README for more info"))
+    mode_agnostic.add_argument(
         "--log",
         default="info",
         metavar="LEVEL",
@@ -55,7 +46,39 @@ def parse_commandline_flags() -> {}:
               " - See https://docs.python.org/3/howto/logging.html for more "
               "information"))
 
+    filter_group = parser.add_argument_group("FILTER args")
+    filter_group.add_argument(
+        "--mol2dirs",
+        default="",
+        metavar="DIR1,DIR2,...",
+        help=
+        "a comma-separated list of directories with mol2 files to be filtered")
+    filter_group.add_argument(
+        "--output-mols",
+        default="output-mols.smi",
+        metavar="FILENAME.smi",
+        help="location of SMILES file holding final filtered molecules")
+    filter_group.add_argument(
+        "--output-tri-n-data",
+        default="output-tri-n-data.csv",
+        metavar="FILENAME.csv",
+        help=("location of CSV file holding data about trivalent nitrogens "
+              "(with molecules in the same order as the SMILES file"))
+    filter_group.add_argument(
+        "--output-tri-n-bonds",
+        default="output-tri-n-bonds.csv",
+        metavar="FILENAME.csv",
+        help=("location of CSV file holding data about individual bonds around "
+              "trivalent nitrogens"))
+
+    plothist_group = parser.add_argument_group("PLOTHIST args")
+
+    select_group = parser.add_argument_group("SELECT args")
+
     args = vars(parser.parse_args())
+
+    # Make mode case-insensitive
+    args["mode"] = args["mode"].upper()
 
     # Parse comma-separated lists
     for comma_sep_list in ["mol2dirs"]:
@@ -63,7 +86,7 @@ def parse_commandline_flags() -> {}:
         args[comma_sep_list] = [] if args[comma_sep_list] == "" else args[
             comma_sep_list].split(",")
 
-    # Check file extensions
+    # Check file extensions and append them if necessary
     for arg, extension in (
         ("output_mols", "smi"),
         ("output_tri_n_data", "csv"),
@@ -84,16 +107,39 @@ def configure_logging(loglevel: str):
         format="%(levelname)s: %(message)s", level=numeric_level)
 
 
-def main():
-    """Run everything."""
-    args = parse_commandline_flags()
-    configure_logging(args["log"])
+def run_filter(args):
+    """Filters molecules from the database."""
     dfilter = dancefilter.DanceFilter(args["mol2dirs"], args["output_mols"])
     dfilter.run()
     mols, properties = dfilter.get_data()
     dsaver = dancesaver.DanceSaver(mols, properties, args["output_tri_n_data"],
                                    args["output_tri_n_bonds"])
     dsaver.run()
+
+
+def run_plothist(args):
+    """Plots Wiberg bond order histograms."""
+    pass
+
+
+def run_select(args):
+    """Makes final selections of molecules."""
+    pass
+
+
+def main():
+    """Runs everything."""
+    args = parse_commandline_flags()
+    configure_logging(args["log"])
+    run_mode = {
+        "FILTER": run_filter,
+        "PLOTHIST": run_plothist,
+        "SELECT": run_select,
+    }
+    if args["mode"] in run_mode:
+        run_mode[args["mode"]](args)
+    else:
+        raise RuntimeError(f"Invalid mode: {args['mode']}")
 
 
 if __name__ == "__main__":
