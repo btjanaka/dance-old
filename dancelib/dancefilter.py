@@ -6,6 +6,7 @@ import math
 from openeye import oechem
 from openeye import oequacpac
 from dancelib import danceprops
+from dancelib import dancerunbase
 
 #
 # Constants
@@ -18,7 +19,7 @@ IS_TRI_N = oechem.OEIsInvertibleNitrogen()
 AM1 = oequacpac.OEAM1()
 
 
-class DanceFilter:
+class DanceFilter(dancerunbase.DanceRunBase):
     """Performs various filtering actions on molecules
 
     After initializing DanceFilter, run it by calling the run() method.
@@ -39,7 +40,6 @@ class DanceFilter:
         _mols: a list storing the molecules the class is currently handling
         _properties: a list storing properties of the molecules (see
                      danceprops.py for more info)
-        _run_yet: whether run() has been called yet
     """
 
     #
@@ -47,18 +47,15 @@ class DanceFilter:
     #
 
     def __init__(self, mol2dirs: [str], output: str):
+        super().__init__()
         self._mol2dirs = mol2dirs
         self._output = output
         self._mols = []
         self._properties = []
-        self._run_yet = False
 
     def run(self):
         """Pushes all the molecules through the various filtering steps"""
-        if self._run_yet:
-            raise RuntimeError("This DanceFilter has already been run")
-        self._run_yet = True
-
+        super().check_run_fatal()
         logging.info("STARTING FILTERING")
         self._filter_tri_n()
         self._apply_properties()
