@@ -3,9 +3,10 @@
 import logging
 from openeye import oechem
 from dancelib import danceprops
+from dancelib import dancerunbase
 
 
-class DanceSaver:
+class DanceSaver(dancerunbase.DanceRunBase):
     """Saves molecule data from DanceFilter.
 
     Molecules passed in should have the danceprops.DANCE_PROPS_KEY data set;
@@ -21,7 +22,6 @@ class DanceSaver:
                      danceprops.py for more info)
         _output_tri_n_data: csv file for data about trivalent nitrogens
         _output_tri_n_bonds: csv file for data about trivalent nitrogen bonds
-        _run_yet: whether run() has been called yet
     """
 
     #
@@ -31,18 +31,15 @@ class DanceSaver:
     def __init__(self, mols: [oechem.OEMol],
                  properties: [danceprops.DanceProperties],
                  output_tri_n_data: str, output_tri_n_bonds: str):
+        super().__init__()
         self._mols = mols
         self._properties = properties
         self._output_tri_n_data = output_tri_n_data
         self._output_tri_n_bonds = output_tri_n_bonds
-        self._run_yet = False
 
     def run(self):
         """Perform all saving actions"""
-        if self._run_yet:
-            raise RuntimeError("This DanceSaver has already been run")
-        self._run_yet = True
-
+        super().check_run_fatal()
         logging.info("STARTING SAVE")
         self._write_to_csv()
         logging.info("FINISHED SAVE")
