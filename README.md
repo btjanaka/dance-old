@@ -28,14 +28,17 @@ The heart of the tool is `dance.py`. It should be used as follows:
      the trivalent nitrogen - the Wiberg bond order, bond length, and element of
      each bond
 2. Use PLOTHIST mode to visualize the Wiberg bond orders from the previous step.
-   This requires the `output-tri-n-data.csv` file from the FILTER step.
+   This requires the `output-tri-n-data.csv` file from the FILTER step. This
+   step ultimately outputs the following file:
+   - `output-histogram.pdf`: a PDF file holding histograms of the bond orders in
+     every output-tri-n-data.csv file you pass in, as well as a histogram of the
+     bond orders in all files combined (put on one plot together)
 3. Use SELECT mode to make a final selection of molecules. This mode takes in
    all the molecules, sorts them again by Wiberg bond order, splits them into
    several bins, and selects the smallest molecules from each bin. This requires
    the `output-mols.smi` and `output-tri-n-data.csv` from the FILTER step.
 
-*note: Only FILTER mode has been fully implemented so far. PLOTHIST mode and
-SELECT mode coming soon*
+*note: SELECT mode coming soon*
 
 ## Usage
 
@@ -47,6 +50,8 @@ usage: dance.py [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
                 [--output-mols FILENAME.smi]
                 [--output-tri-n-data FILENAME.csv]
                 [--output-tri-n-bonds FILENAME.csv]
+                [--tri-n-data-csvs CSV1,CSV2,...]
+                [--output-histograms FILENAME.pdf]
 
 Performs various functions for selecting molecules from a database. It will do
 the following based on the mode. FILTER - Take in directories of mol2 files,
@@ -85,6 +90,15 @@ FILTER args:
                         location of CSV file holding data about individual
                         bonds around trivalent nitrogens (default: output-tri-
                         n-bonds.csv)
+
+PLOTHIST args:
+  --tri-n-data-csvs CSV1,CSV2,...
+                        a comma-separated list of CSV files, each of the same
+                        form as the output-tri-n-data.csv generated in the
+                        FILTER step (default: )
+  --output-histograms FILENAME.pdf
+                        location of PDF file for histograms (default: output-
+                        histograms.pdf)
 ```
 
 ### Example
@@ -107,7 +121,17 @@ DEBUG to stderr.
 
 #### PLOTHIST mode
 
-(Coming soon)
+```
+dance.py --mode PLOTHIST \
+         --tri-n-data-csvs data1.csv,data2.csv,data3.csv \
+         --output-histograms output-histograms.pdf \
+         --log debug
+```
+
+Reads in Wiberg bond orders from data1.csv, data2.csv, and data3.csv and
+generates histograms of the bond orders in each file. Also generates a histogram
+for the bond orders from all files combined together. Writes the histograms to
+output-histograms.pdf. Prints log messages as low as DEBUG to stderr.
 
 #### SELECT mode
 
