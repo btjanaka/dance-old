@@ -24,9 +24,9 @@ The heart of the tool is `dance.py`. It should be used as follows:
    - `output-tri-n-data.csv`: holds data about the trivalent nitrogen in each
      molecule - the total Wiberg bond order, total bond angle, and total bond
      length of the bonds surrounding the nitrogen
-   - `output-tri-n-bonds.csv`: holds data about the individual bonds connected to
-     the trivalent nitrogen - the Wiberg bond order, bond length, and element of
-     each bond
+   - `output-tri-n-bonds.csv`: holds data about the individual bonds connected
+     to the trivalent nitrogen - the Wiberg bond order, bond length, and element
+     of each bond
 2. Use PLOTHIST mode to visualize the Wiberg bond orders from the previous step.
    This requires the `output-tri-n-data.csv` file from the FILTER step. This
    step ultimately outputs the following file:
@@ -39,6 +39,14 @@ The heart of the tool is `dance.py`. It should be used as follows:
    the `output-mols.smi` and `output-tri-n-data.csv` from the FILTER step.
 
 *note: SELECT mode coming soon*
+
+## Dependencies
+
+DANCE requires the following libraries to operate:
+- Python standard library
+- Openeye
+- Matplotlib
+- Numpy
 
 ## Usage
 
