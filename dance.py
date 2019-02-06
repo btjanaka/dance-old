@@ -78,6 +78,24 @@ def parse_commandline_flags() -> {str: "argument value"}:
         default="output-histograms.pdf",
         metavar="FILENAME.pdf",
         help="location of PDF file for histograms")
+    plothist_group.add_argument(
+        "--hist-min",
+        default=2.0,
+        metavar="FLOAT",
+        type=float,
+        help="Minimum bin for histogram")
+    plothist_group.add_argument(
+        "--hist-max",
+        default=3.4,
+        metavar="FLOAT",
+        type=float,
+        help="Maximum bin for histogram")
+    plothist_group.add_argument(
+        "--hist-step",
+        default=0.1,
+        metavar="FLOAT",
+        type=float,
+        help="Step/bin size for histogram")
 
     select_group = parser.add_argument_group("SELECT args")
 
@@ -126,8 +144,9 @@ def run_filter(args):
 
 def run_plothist(args):
     """Plots Wiberg bond order histograms."""
-    dwibhist = dancewibhist.DanceWibHist(args["tri_n_data_csvs"],
-                                         args["output_histograms"])
+    dwibhist = dancewibhist.DanceWibHist(
+        args["tri_n_data_csvs"], args["output_histograms"], args["hist_min"],
+        args["hist_max"], args["hist_step"])
     dwibhist.run()
 
 

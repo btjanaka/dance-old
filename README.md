@@ -59,7 +59,8 @@ usage: dance.py [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
                 [--output-tri-n-data FILENAME.csv]
                 [--output-tri-n-bonds FILENAME.csv]
                 [--tri-n-data-csvs CSV1,CSV2,...]
-                [--output-histograms FILENAME.pdf]
+                [--output-histograms FILENAME.pdf] [--hist-min FLOAT]
+                [--hist-max FLOAT] [--hist-step FLOAT]
 
 Performs various functions for selecting molecules from a database. It will do
 the following based on the mode. FILTER - Take in directories of mol2 files,
@@ -107,6 +108,9 @@ PLOTHIST args:
   --output-histograms FILENAME.pdf
                         location of PDF file for histograms (default: output-
                         histograms.pdf)
+  --hist-min FLOAT      Minimum bin for histogram (default: 2.0)
+  --hist-max FLOAT      Maximum bin for histogram (default: 3.4)
+  --hist-step FLOAT     Step/bin size for histogram (default: 0.1)
 ```
 
 ### Example

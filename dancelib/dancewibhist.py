@@ -20,18 +20,41 @@ class DanceWibHist(dancerunbase.DanceRunBase):
         _histogram_file: the actual file object used to save the plots
         _bond_orders: a list of numpy arrays, where the array at index i holds
                       the bond orders in the file at index i of _tri_n_data_csvs
+        _hist_min: minimum bin for histogram
+        _hist_max: maximum bin for histogram
+        _hist_step: step size for histogram bins
+        _hist_bins: list of bins for the histogram, based on _hist_min,
+                    _hist_max, and _hist_step
     """
 
     #
     # Public
     #
 
-    def __init__(self, tri_n_data_csvs: [str], output_histogram: str):
+    def __init__(self, tri_n_data_csvs: [str], output_histogram: str,
+                 hist_min: float, hist_max: float, hist_step: float):
+        """
+        Initializes variables. Raises RuntimeError if the min is not less
+        than the max, or if the step is 0 or less.
+        """
         super().__init__()
         self._tri_n_data_csvs = tri_n_data_csvs
         self._output_histogram = output_histogram
         self._histogram_file = PdfPages(self._output_histogram)
         self._bond_orders = []
+
+        # Histogram variables
+        if hist_min >= hist_max or hist_step <= 0:
+            raise RuntimeError(f"Invalid histogram specifications: "
+                               f"min({hist_min}), max({hist_max}), "
+                               f"step({hist_step})")
+        self._hist_min = hist_min
+        self._hist_max = hist_max
+        self._hist_step = hist_step
+        self._hist_bins = np.arange(
+            self._hist_min, self._hist_max + self._hist_step, self._hist_step)
+
+        plt.rcParams.update({'font.size': 8})
 
     def run(self):
         """Make all plots"""
@@ -56,13 +79,23 @@ class DanceWibHist(dancerunbase.DanceRunBase):
                     csvfile, delimiter=",", skip_header=1, usecols=(0,)))
 
     def _plot_histograms(self):
-        """Plot histograms of the bond orders for each CSV and for all combined"""
+        """Plot histograms of bond orders for each CSV and for all combined"""
         for csvfile, bond_orders in zip(self._tri_n_data_csvs,
                                         self._bond_orders):
-            plt.title(csvfile)
-            plt.hist(bond_orders)
-            self._histogram_file.savefig()
+            self._plot_one_histogram((f"Wiberg Bond Orders for Trivalent "
+                                      f"Nitrogen Molecules in \n{csvfile}"),
+                                     bond_orders)
 
-        plt.title("Combined")
-        plt.hist(np.concatenate(self._bond_orders))
-        self._histogram_file.savefig()
+        self._plot_one_histogram(("Wiberg Bond Orders Across all Trivalent "
+                                  "Nitrogen Molecules"),
+                                 np.concatenate(self._bond_orders))
+
+    def _plot_one_histogram(self, title: str, bond_orders: np.array):
+        fig, ax = plt.subplots()
+        ax.set_title(title)
+        ax.hist(bond_orders, bins=self._hist_bins)
+        ax.set_xlim([self._hist_min, self._hist_max])
+        ax.set_xticks(self._hist_bins)
+        ax.set_xlabel("Wiberg Bond Order")
+        ax.set_ylabel("Number of Molecules")
+        self._histogram_file.savefig(fig)
