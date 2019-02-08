@@ -7,7 +7,7 @@ from dancelib import dancerunbase
 
 
 class DanceSaver(dancerunbase.DanceRunBase):
-    """Saves molecule data from DanceFilter.
+    """Saves molecule data from DanceFilter as SMILES strings and in CSV's.
 
     Molecules passed in should have the danceprops.DANCE_PROPS_KEY data set;
     failure to have this results in undefined behavior.
@@ -20,6 +20,7 @@ class DanceSaver(dancerunbase.DanceRunBase):
         _mols: the molecules which are being saved
         _properties: a list storing properties of the molecules (see
                      danceprops.py for more info)
+        _output_mols: SMILES file for SMILES strings of molecules
         _output_tri_n_data: csv file for data about trivalent nitrogens
         _output_tri_n_bonds: csv file for data about trivalent nitrogen bonds
     """
@@ -29,11 +30,12 @@ class DanceSaver(dancerunbase.DanceRunBase):
     #
 
     def __init__(self, mols: [oechem.OEMol],
-                 properties: [danceprops.DanceProperties],
+                 properties: [danceprops.DanceProperties], output_mols: str,
                  output_tri_n_data: str, output_tri_n_bonds: str):
         super().__init__()
         self._mols = mols
         self._properties = properties
+        self._output_mols = output_mols
         self._output_tri_n_data = output_tri_n_data
         self._output_tri_n_bonds = output_tri_n_bonds
 
@@ -41,12 +43,22 @@ class DanceSaver(dancerunbase.DanceRunBase):
         """Perform all saving actions"""
         super().check_run_fatal()
         logging.info("STARTING SAVE")
+        self._write_to_smiles_file()
         self._write_to_csv()
         logging.info("FINISHED SAVE")
 
     #
     # Private
     #
+
+    def _write_to_smiles_file(self):
+        """Writes the molecules to the SMILES file"""
+        logging.info(f"Writing molecules to SMILES file {self._output_mols}")
+        ostream = oechem.oemolostream(self._output_mols)
+        ostream.SetFormat(oechem.OEFormat_USM)
+        for mol in self._mols:
+            oechem.OEWriteMolecule(ostream, mol)
+        ostream.close()
 
     def _write_to_csv(self):
         """Writes the data about trivalent nitrogens and their bonds to CSVs"""

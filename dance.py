@@ -134,10 +134,11 @@ def configure_logging(loglevel: str):
 
 def run_filter(args):
     """Filters molecules from the database."""
-    dfilter = dancefilter.DanceFilter(args["mol2dirs"], args["output_mols"])
+    dfilter = dancefilter.DanceFilter(args["mol2dirs"])
     dfilter.run()
     mols, properties = dfilter.get_data()
-    dsaver = dancesaver.DanceSaver(mols, properties, args["output_tri_n_data"],
+    dsaver = dancesaver.DanceSaver(mols, properties, args["output_mols"],
+                                   args["output_tri_n_data"],
                                    args["output_tri_n_bonds"])
     dsaver.run()
 
