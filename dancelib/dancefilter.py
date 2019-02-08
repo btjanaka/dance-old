@@ -12,7 +12,7 @@ from dancelib import dancerunbase
 # Constants
 #
 
-# Trivalent Nitrogen checker - instead of repeatedly constructing this class
+# Trivalent Nitrogen checker - instead of repeatedly constructing this object
 IS_TRI_N = oechem.OEIsInvertibleNitrogen()
 
 # Object for calculating AM1 charges - instead of reconstructing it everywhere
@@ -29,14 +29,11 @@ class DanceFilter(dancerunbase.DanceRunBase):
         - the molecules and their properties will be available via the
           get_data() method - the molecules returned will be sorted by Wiberg
           bond order and only have one trivalent nitrogen
-        - a SMILES file with the molecules will have been written at the
-          location specified upon initialization
     Note that the class is only meant to be run once, and attempting to call
     run() again will result in a RuntimeError.
 
     Attributes:
         _mol2dirs: list of names of directories with mol2 files
-        _output: the name of the output file to which to write the molecules
         _mols: a list storing the molecules the class is currently handling
         _properties: a list storing properties of the molecules (see
                      danceprops.py for more info)
@@ -46,10 +43,9 @@ class DanceFilter(dancerunbase.DanceRunBase):
     # Public
     #
 
-    def __init__(self, mol2dirs: [str], output: str):
+    def __init__(self, mol2dirs: [str]):
         super().__init__()
         self._mol2dirs = mol2dirs
-        self._output = output
         self._mols = []
         self._properties = []
 
@@ -60,7 +56,6 @@ class DanceFilter(dancerunbase.DanceRunBase):
         self._filter_tri_n()
         self._apply_properties()
         self._sort_by_wiberg()
-        self._write_to_smiles_file()
         logging.info("FINISHED FILTERING")
 
     def get_data(self) -> ([oechem.OEMol], [danceprops.DanceProperties]):
@@ -105,15 +100,6 @@ class DanceFilter(dancerunbase.DanceRunBase):
             key=
             lambda m: danceprops.get_dance_property(m, self._properties).tri_n_bond_order
         )
-
-    def _write_to_smiles_file(self):
-        """Writes the molecules to the SMILES file"""
-        logging.info(f"Writing molecules to SMILES file {self._output}")
-        ostream = oechem.oemolostream(self._output)
-        ostream.SetFormat(oechem.OEFormat_USM)
-        for mol in self._mols:
-            oechem.OEWriteMolecule(ostream, mol)
-        ostream.close()
 
     #
     # Private (utility)
