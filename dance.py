@@ -6,16 +6,11 @@ import argparse
 import logging
 from dancelib import dancefilter
 from dancelib import dancesaver
+from dancelib import dancewibhist
 
 
-def parse_commandline_flags() -> {}:
-    """Uses argparse to handle all parsing of command line flags.
-
-    Returns:
-        a dictionary holding the values of all the flags
-    Raises:
-        IndexError: not enough arguments were passed in
-    """
+def parse_commandline_flags() -> {str: "argument value"}:
+    """Uses argparse to handle all parsing of command line flags."""
     parser = argparse.ArgumentParser(
         description=(
             "Performs various functions for selecting molecules from a "
@@ -72,6 +67,35 @@ def parse_commandline_flags() -> {}:
               "trivalent nitrogens"))
 
     plothist_group = parser.add_argument_group("PLOTHIST args")
+    plothist_group.add_argument(
+        "--tri-n-data-csvs",
+        default="",
+        metavar="CSV1,CSV2,...",
+        help=("a comma-separated list of CSV files, each of the same form "
+              "as the output-tri-n-data.csv generated in the FILTER step"))
+    plothist_group.add_argument(
+        "--output-histograms",
+        default="output-histograms.pdf",
+        metavar="FILENAME.pdf",
+        help="location of PDF file for histograms")
+    plothist_group.add_argument(
+        "--hist-min",
+        default=2.0,
+        metavar="FLOAT",
+        type=float,
+        help="Minimum bin for histogram")
+    plothist_group.add_argument(
+        "--hist-max",
+        default=3.4,
+        metavar="FLOAT",
+        type=float,
+        help="Maximum bin for histogram")
+    plothist_group.add_argument(
+        "--hist-step",
+        default=0.1,
+        metavar="FLOAT",
+        type=float,
+        help="Step/bin size for histogram")
 
     select_group = parser.add_argument_group("SELECT args")
 
@@ -81,7 +105,7 @@ def parse_commandline_flags() -> {}:
     args["mode"] = args["mode"].upper()
 
     # Parse comma-separated lists
-    for comma_sep_list in ["mol2dirs"]:
+    for comma_sep_list in ["mol2dirs", "tri_n_data_csvs"]:
         comma_sep_list = comma_sep_list.strip()
         args[comma_sep_list] = [] if args[comma_sep_list] == "" else args[
             comma_sep_list].split(",")
@@ -91,6 +115,7 @@ def parse_commandline_flags() -> {}:
         ("output_mols", "smi"),
         ("output_tri_n_data", "csv"),
         ("output_tri_n_bonds", "csv"),
+        ("output_histograms", "pdf"),
     ):
         if not args[arg].endswith("." + extension):
             args[arg] += "." + extension
@@ -119,7 +144,10 @@ def run_filter(args):
 
 def run_plothist(args):
     """Plots Wiberg bond order histograms."""
-    pass
+    dwibhist = dancewibhist.DanceWibHist(
+        args["tri_n_data_csvs"], args["output_histograms"], args["hist_min"],
+        args["hist_max"], args["hist_step"])
+    dwibhist.run()
 
 
 def run_select(args):
