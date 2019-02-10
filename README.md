@@ -28,8 +28,13 @@ The heart of the tool is `dance.py`. It should be used as follows:
      to the trivalent nitrogen - the Wiberg bond order, bond length, and element
      of each bond
 2. Use PLOTHIST mode to visualize the Wiberg bond orders from the previous step.
-   This requires the `output-tri-n-data.csv` file from the FILTER step. This
-   step ultimately outputs the following file:
+   This requires either the `output-tri-n-data.csv` file or the
+   `output-tri-n-bonds.csv` from the FILTER step. Note that if you choose the
+   `output-tri-n-bonds.csv` file, you will have to change some of the command
+   line arguments, as the defaults are for `output-tri-n-data.csv`.
+   Specifically, `hist-min`, `hist-max`, and `hist-step` should be adjusted,
+   most likely to around 0.5, 1.5, and 0.1, respectively. This step ultimately
+   outputs the following file:
    - `output-histogram.pdf`: a PDF file holding histograms of the bond orders in
      every output-tri-n-data.csv file you pass in, as well as a histogram of the
      bond orders in all files combined (put on one plot together)
@@ -58,7 +63,7 @@ usage: dance.py [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
                 [--output-mols FILENAME.smi]
                 [--output-tri-n-data FILENAME.csv]
                 [--output-tri-n-bonds FILENAME.csv]
-                [--tri-n-data-csvs CSV1,CSV2,...]
+                [--wiberg-csvs CSV1,CSV2,...] [--wiberg-csv-col INT]
                 [--output-histograms FILENAME.pdf] [--hist-min FLOAT]
                 [--hist-max FLOAT] [--hist-step FLOAT]
 
@@ -66,7 +71,7 @@ Performs various functions for selecting molecules from a database. It will do
 the following based on the mode. FILTER - Take in directories of mol2 files,
 filter out molecules with a single trivalent nitrogen, sort them by Wiberg
 bond order, and write them to a file. PLOTHIST - Take in data files from the
-previous step and use matplotlib to create histograms of the Wiberg bond
+previous step and use matplotlib to generate histograms of the Wiberg bond
 orders. SELECT - Make a final selection of molecules from the ones generated
 in the first step. See README for more info.
 
@@ -101,10 +106,12 @@ FILTER args:
                         n-bonds.csv)
 
 PLOTHIST args:
-  --tri-n-data-csvs CSV1,CSV2,...
-                        a comma-separated list of CSV files, each of the same
-                        form as the output-tri-n-data.csv generated in the
-                        FILTER step (default: )
+  --wiberg-csvs CSV1,CSV2,...
+                        a comma-separated list of CSV files with a column
+                        containing wiberg bond orders - these files are likely
+                        generated in the FILTER step (default: )
+  --wiberg-csv-col INT  Column in the CSV files holding the Wiberg bond orders
+                        (0-indexed) (default: 0)
   --output-histograms FILENAME.pdf
                         location of PDF file for histograms (default: output-
                         histograms.pdf)

@@ -19,7 +19,7 @@ def parse_commandline_flags() -> {str: "argument value"}:
             "molecules with a single trivalent nitrogen, sort them by Wiberg "
             "bond order, and write them to a file. "
             "PLOTHIST - Take in data files from the previous step and use "
-            "matplotlib to create histograms of the Wiberg bond orders. "
+            "matplotlib to generate histograms of the Wiberg bond orders. "
             "SELECT - Make a final selection of molecules from the ones "
             "generated in the first step. "
             "See README for more info."),
@@ -68,11 +68,19 @@ def parse_commandline_flags() -> {str: "argument value"}:
 
     plothist_group = parser.add_argument_group("PLOTHIST args")
     plothist_group.add_argument(
-        "--tri-n-data-csvs",
+        "--wiberg-csvs",
         default="",
         metavar="CSV1,CSV2,...",
-        help=("a comma-separated list of CSV files, each of the same form "
-              "as the output-tri-n-data.csv generated in the FILTER step"))
+        help=("a comma-separated list of CSV files with a column containing "
+              "wiberg bond orders - these files are likely generated "
+              "in the FILTER step"))
+    plothist_group.add_argument(
+        "--wiberg-csv-col",
+        default=0,
+        metavar="INT",
+        type=int,
+        help=("Column in the CSV files holding the Wiberg bond orders "
+              "(0-indexed)"))
     plothist_group.add_argument(
         "--output-histograms",
         default="output-histograms.pdf",
@@ -105,7 +113,7 @@ def parse_commandline_flags() -> {str: "argument value"}:
     args["mode"] = args["mode"].upper()
 
     # Parse comma-separated lists
-    for comma_sep_list in ["mol2dirs", "tri_n_data_csvs"]:
+    for comma_sep_list in ["mol2dirs", "wiberg_csvs"]:
         comma_sep_list = comma_sep_list.strip()
         args[comma_sep_list] = [] if args[comma_sep_list] == "" else args[
             comma_sep_list].split(",")
@@ -146,8 +154,8 @@ def run_filter(args):
 def run_plothist(args):
     """Plots Wiberg bond order histograms."""
     dwibhist = dancewibhist.DanceWibHist(
-        args["tri_n_data_csvs"], args["output_histograms"], args["hist_min"],
-        args["hist_max"], args["hist_step"])
+        args["wiberg_csvs"], args["wiberg_csv_col"], args["output_histograms"],
+        args["hist_min"], args["hist_max"], args["hist_step"])
     dwibhist.run()
 
 
