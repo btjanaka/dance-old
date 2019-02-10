@@ -1,4 +1,4 @@
-"""Provides a class for performing molecule filtering."""
+"""Provides a class for generating initial DANCE molecules."""
 
 import glob
 import logging
@@ -16,10 +16,14 @@ from dancelib import dancerunbase
 AM1 = oequacpac.OEAM1()
 
 
-class DanceFilter(dancerunbase.DanceRunBase):
-    """Performs various filtering actions on molecules
+class DanceGenerator(dancerunbase.DanceRunBase):
+    """
+    Generates an initial set of molecules for DANCE. These molecules all have a
+    single trivalent nitrogen. A DanceProperties object is also generated and
+    stored for each molecule (see the DanceProperties documentation for more
+    info).
 
-    After initializing DanceFilter, run it by calling the run() method.
+    After initializing DanceGenerator, run it by calling the run() method.
     After run() has been called:
         - each molecule will have a danceprops.DANCE_PROPS_KEY tag (see
           danceprops.py for more info)
@@ -47,13 +51,13 @@ class DanceFilter(dancerunbase.DanceRunBase):
         self._properties = []
 
     def run(self):
-        """Pushes all the molecules through the various filtering steps"""
+        """Pushes all the molecules through the various generating steps"""
         super().check_run_fatal()
-        logging.info("STARTING FILTERING")
+        logging.info("STARTING GENERATING")
         self._filter_tri_n()
         self._apply_properties()
         self._sort_by_wiberg()
-        logging.info("FINISHED FILTERING")
+        logging.info("FINISHED GENERATING")
 
     def get_data(self) -> ([oechem.OEMol], [danceprops.DanceProperties]):
         """Return the molecules and properties associated with this class."""

@@ -7,7 +7,7 @@ from dancelib import dancerunbase
 
 
 class DanceSaver(dancerunbase.DanceRunBase):
-    """Saves molecule data from DanceFilter as SMILES strings and in CSV's.
+    """Saves molecule data from DanceGenerator as SMILES strings and in CSV's.
 
     Molecules passed in should have the danceprops.DANCE_PROPS_KEY data set;
     failure to have this results in undefined behavior.

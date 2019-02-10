@@ -4,7 +4,7 @@
 
 import argparse
 import logging
-from dancelib import dancefilter
+from dancelib import dancegenerator
 from dancelib import dancesaver
 from dancelib import dancewibhist
 
@@ -15,9 +15,9 @@ def parse_commandline_flags() -> {str: "argument value"}:
         description=(
             "Performs various functions for selecting molecules from a "
             "database. It will do the following based on the mode. "
-            "FILTER - Take in directories of mol2 files, filter out "
-            "molecules with a single trivalent nitrogen, sort them by Wiberg "
-            "bond order, and write them to a file. "
+            "GENERATE - Take in directories of mol2 files, generate the "
+            "initial set of molecules with a single trivalent nitrogen, and "
+            "write the molecules and accompanying data to various files. "
             "PLOTHIST - Take in data files from the previous step and use "
             "matplotlib to generate histograms of the Wiberg bond orders. "
             "SELECT - Make a final selection of molecules from the ones "
@@ -29,9 +29,9 @@ def parse_commandline_flags() -> {str: "argument value"}:
         "Mode Agnostic args", "Arguments which apply to every mode of DANCE")
     mode_agnostic.add_argument(
         "--mode",
-        default="FILTER",
+        default="GENERATE",
         metavar="MODE",
-        help=("The mode in which to run DANCE - one of FILTER, PLOTHIST, "
+        help=("The mode in which to run DANCE - one of GENERATE, PLOTHIST, "
               "or SELECT. See README for more info"))
     mode_agnostic.add_argument(
         "--log",
@@ -41,25 +41,25 @@ def parse_commandline_flags() -> {str: "argument value"}:
               " - See https://docs.python.org/3/howto/logging.html for more "
               "information"))
 
-    filter_group = parser.add_argument_group("FILTER args")
-    filter_group.add_argument(
+    generate_group = parser.add_argument_group("GENERATE args")
+    generate_group.add_argument(
         "--mol2dirs",
         default="",
         metavar="DIR1,DIR2,...",
-        help=
-        "a comma-separated list of directories with mol2 files to be filtered")
-    filter_group.add_argument(
+        help=("a comma-separated list of directories with mol2 files to be "
+              "filtered and saved"))
+    generate_group.add_argument(
         "--output-mols",
         default="output-mols.smi",
         metavar="FILENAME.smi",
-        help="location of SMILES file holding final filtered molecules")
-    filter_group.add_argument(
+        help="location of SMILES file holding final generated molecules")
+    generate_group.add_argument(
         "--output-tri-n-data",
         default="output-tri-n-data.csv",
         metavar="FILENAME.csv",
         help=("location of CSV file holding data about trivalent nitrogens "
               "(with molecules in the same order as the SMILES file"))
-    filter_group.add_argument(
+    generate_group.add_argument(
         "--output-tri-n-bonds",
         default="output-tri-n-bonds.csv",
         metavar="FILENAME.csv",
@@ -73,7 +73,7 @@ def parse_commandline_flags() -> {str: "argument value"}:
         metavar="CSV1,CSV2,...",
         help=("a comma-separated list of CSV files with a column containing "
               "wiberg bond orders - these files are likely generated "
-              "in the FILTER step"))
+              "in the GENERATE step"))
     plothist_group.add_argument(
         "--wiberg-csv-col",
         default=0,
@@ -140,11 +140,11 @@ def configure_logging(loglevel: str):
         format="%(levelname)s: %(message)s", level=numeric_level)
 
 
-def run_filter(args):
-    """Filters molecules from the database."""
-    dfilter = dancefilter.DanceFilter(args["mol2dirs"])
-    dfilter.run()
-    mols, properties = dfilter.get_data()
+def run_generator(args):
+    """Generate molecules from the database."""
+    dgenerator = dancegenerator.DanceGenerator(args["mol2dirs"])
+    dgenerator.run()
+    mols, properties = dgenerator.get_data()
     dsaver = dancesaver.DanceSaver(mols, properties, args["output_mols"],
                                    args["output_tri_n_data"],
                                    args["output_tri_n_bonds"])
@@ -169,7 +169,7 @@ def main():
     args = parse_commandline_flags()
     configure_logging(args["log"])
     run_mode = {
-        "FILTER": run_filter,
+        "GENERATE": run_generator,
         "PLOTHIST": run_plothist,
         "SELECT": run_select,
     }
