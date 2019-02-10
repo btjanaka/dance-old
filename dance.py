@@ -21,8 +21,7 @@ def parse_commandline_flags() -> {str: "argument value"}:
             "PLOTHIST - Take in data files from the previous step and use "
             "matplotlib to generate histograms of the Wiberg bond orders. "
             "SELECT - Make a final selection of molecules from the ones "
-            "generated in the first step. "
-            "See README for more info."),
+            "generated in the first step. "),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     mode_agnostic = parser.add_argument_group(
@@ -49,10 +48,15 @@ def parse_commandline_flags() -> {str: "argument value"}:
         help=("a comma-separated list of directories with mol2 files to be "
               "filtered and saved"))
     generate_group.add_argument(
-        "--output-mols",
+        "--output-mols-smi",
         default="output-mols.smi",
         metavar="FILENAME.smi",
         help="location of SMILES file holding final generated molecules")
+    generate_group.add_argument(
+        "--output-mols-oeb",
+        default="output-mols.oeb",
+        metavar="FILENAME.oeb",
+        help="location of OEB (Openeye Binary) file holding final molecules")
     generate_group.add_argument(
         "--output-tri-n-data",
         default="output-tri-n-data.csv",
@@ -65,6 +69,12 @@ def parse_commandline_flags() -> {str: "argument value"}:
         metavar="FILENAME.csv",
         help=("location of CSV file holding data about individual bonds around "
               "trivalent nitrogens"))
+    generate_group.add_argument(
+        "--output-props-binary",
+        default="output-props.binary",
+        metavar="FILENAME.binary",
+        help=("location of binary file holding DanceProperties objects with "
+              "data about the molecules"))
 
     plothist_group = parser.add_argument_group("PLOTHIST args")
     plothist_group.add_argument(
@@ -120,9 +130,11 @@ def parse_commandline_flags() -> {str: "argument value"}:
 
     # Check file extensions and append them if necessary
     for arg, extension in (
-        ("output_mols", "smi"),
+        ("output_mols_smi", "smi"),
+        ("output_mols_oeb", "oeb"),
         ("output_tri_n_data", "csv"),
         ("output_tri_n_bonds", "csv"),
+        ("output_props_binary", "binary"),
         ("output_histograms", "pdf"),
     ):
         if not args[arg].endswith("." + extension):
@@ -145,9 +157,10 @@ def run_generator(args):
     dgenerator = dancegenerator.DanceGenerator(args["mol2dirs"])
     dgenerator.run()
     mols, properties = dgenerator.get_data()
-    dsaver = dancesaver.DanceSaver(mols, properties, args["output_mols"],
-                                   args["output_tri_n_data"],
-                                   args["output_tri_n_bonds"])
+    dsaver = dancesaver.DanceSaver(
+        mols, properties, args["output_mols_smi"], args["output_mols_oeb"],
+        args["output_tri_n_data"], args["output_tri_n_bonds"],
+        args["output_props_binary"])
     dsaver.run()
 
 
