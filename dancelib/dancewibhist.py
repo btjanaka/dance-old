@@ -59,7 +59,7 @@ class DanceWibHist(dancerunbase.DanceRunBase):
                                     self._hist_max + self._hist_step / 2,
                                     self._hist_step)
 
-        plt.rcParams.update({'font.size': 8})
+        plt.rcParams.update({'font.size': 6})
 
     def run(self):
         """Make all plots"""
@@ -105,4 +105,5 @@ class DanceWibHist(dancerunbase.DanceRunBase):
         ax.set_xticks(self._hist_bins)
         ax.set_xlabel("Wiberg Bond Order")
         ax.set_ylabel("Number of Molecules")
+        fig.autofmt_xdate()
         self._histogram_file.savefig(fig)
