@@ -12,9 +12,6 @@ from dancelib import dancerunbase
 # Constants
 #
 
-# Trivalent Nitrogen checker - instead of repeatedly constructing this object
-IS_TRI_N = oechem.OEIsInvertibleNitrogen()
-
 # Object for calculating AM1 charges - instead of reconstructing it everywhere
 AM1 = oequacpac.OEAM1()
 
@@ -129,8 +126,7 @@ class DanceFilter(dancerunbase.DanceRunBase):
         mol = oechem.OEMol()
         oechem.OEReadMolecule(istream, mol)
 
-        tri_n_count = sum(1 if IS_TRI_N(atom) else 0 for atom in mol.GetAtoms())
-        return mol, tri_n_count == 1
+        return mol, oechem.OECount(mol, oechem.OEIsInvertibleNitrogen()) == 1
 
     @staticmethod
     def _calc_properties(mol: oechem.OEMol) -> danceprops.DanceProperties:
@@ -152,7 +148,7 @@ class DanceFilter(dancerunbase.DanceRunBase):
                 return props
 
             # Sum bond orders, bond lengths, and bond angles
-            for atom in charged_copy.GetAtoms(IS_TRI_N):
+            for atom in charged_copy.GetAtoms(oechem.OEIsInvertibleNitrogen()):
                 nbors = list(atom.GetAtoms())  # (neighbors)
                 ang1 = math.degrees(
                     oechem.OEGetAngle(charged_copy, nbors[0], atom, nbors[1]))
