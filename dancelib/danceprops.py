@@ -18,6 +18,16 @@ from openeye import oechem
 # Tag used for storing the key to DanceProperties data in a molecule
 DANCE_PROPS_KEY = "DancePropertiesKey"
 
+# Tag used for storing the charged copy (using AM1 charges) of a molecule's
+# first conformation
+DANCE_CHARGED_COPY_KEY = "DanceChargedCopy"
+
+# Tag used for storing Wiberg Bond Orders in molecules - needed because we want
+# to save molecules and their properties, but the default object holding the
+# bond orders - OEAM1Results - is not save-able using either pickle or Openeye
+# tools
+DANCE_BOND_ORDER_KEY = "DanceWibergBondOrder"
+
 #
 # Classes
 #

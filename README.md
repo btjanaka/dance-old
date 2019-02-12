@@ -22,7 +22,8 @@ The heart of the tool is `dance.py`. It should be used as follows:
    of mol2 files. GENERATE mode ultimately generates the following files (which
    you may choose to rename when invoking `dance.py`):
    - `output-mols.smi`: SMILES strings representing the molecules
-   - `output-mols.oeb`: an OEB (Openeye Binary) file for raw molecule data
+   - `output-mols.oeb`: an OEB (Openeye Binary) file for raw molecule data from
+     DanceGenerator
    - `output-tri-n-data.csv`: holds data about the trivalent nitrogen in each
      molecule - the total Wiberg bond order, total bond angle, and total bond
      length of the bonds surrounding the nitrogen

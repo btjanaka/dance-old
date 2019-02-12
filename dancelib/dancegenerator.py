@@ -26,7 +26,11 @@ class DanceGenerator(dancerunbase.DanceRunBase):
     After initializing DanceGenerator, run it by calling the run() method.
     After run() has been called:
         - each molecule will have a danceprops.DANCE_PROPS_KEY tag (see
-          danceprops.py for more info)
+          danceprops.py)
+        - each molecule will have a danceprops.DANCE_CHARGED_COPY_KEY tag (see
+          danceprops.py)
+          - each bond in the molecule corresponding to this tag will have a
+            danceprops.DANCE_BOND_ORDER_KEY tag (see danceprops.py)
         - the molecules and their properties will be available via the
           get_data() method - the molecules returned will be sorted by Wiberg
           bond order and only have one trivalent nitrogen
@@ -133,6 +137,22 @@ class DanceGenerator(dancerunbase.DanceRunBase):
         return mol, oechem.OECount(mol, oechem.OEIsInvertibleNitrogen()) == 1
 
     @staticmethod
+    def _add_charge_props(mol: oechem.OEMol, charged_copy: oechem.OEMol,
+                          am1_results: oequacpac.OEAM1Results):
+        """
+        Adds data from AM1 results to the given molecule. After this method is
+        called, the molecule will have a danceprops.DANCE_CHARGED_COPY_KEY
+        data storing the charged copy of the molecule. On that charged copy,
+        each bond will have a danceprops.DANCE_BOND_ORDER_KEY data telling its
+        Wiberg bond order.
+        """
+        for bond in charged_copy.GetBonds():
+            bond.SetData(
+                danceprops.DANCE_BOND_ORDER_KEY,
+                am1_results.GetBondOrder(bond.GetBgnIdx(), bond.GetEndIdx()))
+        mol.SetData(danceprops.DANCE_CHARGED_COPY_KEY, charged_copy)
+
+    @staticmethod
     def _calc_properties(mol: oechem.OEMol) -> danceprops.DanceProperties:
         """
         Calculates properties of the given molecule and returns a
@@ -150,6 +170,7 @@ class DanceGenerator(dancerunbase.DanceRunBase):
                 logging.debug(
                     f"failed to assign partial charges to {mol.GetTitle()}")
                 return props
+            DanceGenerator._add_charge_props(mol, charged_copy, results)
 
             # Sum bond orders, bond lengths, and bond angles
             for atom in charged_copy.GetAtoms(oechem.OEIsInvertibleNitrogen()):
