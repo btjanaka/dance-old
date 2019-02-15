@@ -2,9 +2,11 @@
 
 <!-- toc -->
 
+- [Dependencies](#dependencies)
+- [Output Directories](#output-directories)
 - [Usage](#usage)
   - [Example](#example)
-    - [FILTER mode](#filter-mode)
+    - [GENERATE mode](#generate-mode)
     - [PLOTHIST mode](#plothist-mode)
     - [SELECT mode](#select-mode)
 - [A Note on Logging](#a-note-on-logging)
@@ -16,37 +18,52 @@ generate parameters for smirnoff99frosst.
 
 The heart of the tool is `dance.py`. It should be used as follows:
 
-1. Use FILTER mode to select molecules with a single trivalent nitrogen from the
-   database. The database must be represented as directories consisting of mol2
-   files. When run in filter mode, FILTER mode ultimately generates the
-   following files (which you may choose to rename when invoking `dance.py`):
-   - `output-mols.smi`: holds SMILES strings representing the molecules
-   - `output-tri-n-data.csv`: holds data about the trivalent nitrogen in each
-     molecule - the total Wiberg bond order, total bond angle, and total bond
-     length of the bonds surrounding the nitrogen
-   - `output-tri-n-bonds.csv`: holds data about the individual bonds connected
-     to the trivalent nitrogen - the Wiberg bond order, bond length, and element
-     of each bond
+1. Use GENERATE mode to generate an initial set of trivalent nitrogen molecules
+   from the database. The database must be represented as directories consisting
+   of mol2 files. GENERATE mode ultimately generates an output directory with
+   several files (see [Output Directories](#output-directories))
 2. Use PLOTHIST mode to visualize the Wiberg bond orders from the previous step.
-   This requires the `output-tri-n-data.csv` file from the FILTER step. This
-   step ultimately outputs the following file:
+   This requires either the `output-tri-n-data.csv` file or the
+   `output-tri-n-bonds.csv` from the GENERATE step. Note that if you choose the
+   `output-tri-n-bonds.csv` file, you will have to change some of the command
+   line arguments, as the defaults are for `output-tri-n-data.csv`.
+   Specifically, `hist-min`, `hist-max`, and `hist-step` should be adjusted,
+   most likely to around 0.5, 1.5, and 0.1, respectively. This step ultimately
+   outputs the following file:
    - `output-histogram.pdf`: a PDF file holding histograms of the bond orders in
      every output-tri-n-data.csv file you pass in, as well as a histogram of the
      bond orders in all files combined (put on one plot together)
 3. Use SELECT mode to make a final selection of molecules. This mode takes in
    all the molecules, sorts them again by Wiberg bond order, splits them into
-   several bins, and selects the smallest molecules from each bin. This requires
-   the `output-mols.smi` and `output-tri-n-data.csv` from the FILTER step.
+   several bins, and selects the smallest molecules from each bin. It then
+   generates an [output directory](#output-directories).
 
-*note: SELECT mode coming soon*
+_note: SELECT mode in development
 
 ## Dependencies
 
 DANCE requires the following libraries to operate:
+
 - Python standard library
 - Openeye
 - Matplotlib
 - Numpy
+
+## Output Directories
+
+The following files are generated whenever DANCE generates an "output directory"
+of files.
+
+- `mols.smi`: SMILES strings representing the molecules
+- `mols.oeb`: an OEB (Openeye Binary) file for raw molecule data
+- `tri-n-data.csv`: holds data about the trivalent nitrogen in each
+  molecule - the total Wiberg bond order, total bond angle, and total bond
+  length of the bonds surrounding the nitrogen
+- `tri-n-bonds.csv`: holds data about the individual bonds connected
+  to the trivalent nitrogen - the Wiberg bond order, bond length, and element
+  of each bond
+- `props.binary`: binary file for storing list of DanceProperties with
+  data about the molecules
 
 ## Usage
 
@@ -55,20 +72,25 @@ invocation of dance.py is optional.
 
 ```
 usage: dance.py [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
-                [--output-mols FILENAME.smi]
-                [--output-tri-n-data FILENAME.csv]
-                [--output-tri-n-bonds FILENAME.csv]
-                [--tri-n-data-csvs CSV1,CSV2,...]
-                [--output-histograms FILENAME.pdf] [--hist-min FLOAT]
-                [--hist-max FLOAT] [--hist-step FLOAT]
+                [--generate-output-dir DIRNAME] [--wiberg-csvs CSV1,CSV2,...]
+                [--wiberg-csv-col INT] [--output-histograms FILENAME.pdf]
+                [--hist-min FLOAT] [--hist-max FLOAT] [--hist-step FLOAT]
+                [--input-binaries OEB,BINARY,OEB,BINARY,...]
+                [--select-output-dir DIRNAME]
 
 Performs various functions for selecting molecules from a database. It will do
-the following based on the mode. FILTER - Take in directories of mol2 files,
-filter out molecules with a single trivalent nitrogen, sort them by Wiberg
-bond order, and write them to a file. PLOTHIST - Take in data files from the
-previous step and use matplotlib to create histograms of the Wiberg bond
-orders. SELECT - Make a final selection of molecules from the ones generated
-in the first step. See README for more info.
+the following based on the mode. GENERATE - Take in directories of mol2 files,
+generate the initial set of molecules with a single trivalent nitrogen, and
+write results to a directory. PLOTHIST - Take in data files from the previous
+step and use matplotlib to generate histograms of the Wiberg bond orders.
+SELECT - Make a final selection of molecules from the ones generated in the
+GENERATE step and write results to a directory. Note that when a part of this
+script "writes results to a directory", that means it generates a directory
+with the following files: mols.smi - molecules from that step stored in SMILES
+format, mols.oeb - the same molecules stored in OEB (Openeye Binary) format,
+tri_n_data.csv - data about the trivalent nitrogen in each molecule,
+tri_n_bonds.csv - data about the bonds around the trivalent nitrogen in each
+molecule, props.binary - binary storage of DanceProperties for the molecules
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -76,66 +98,66 @@ optional arguments:
 Mode Agnostic args:
   Arguments which apply to every mode of DANCE
 
-  --mode MODE           The mode in which to run DANCE - one of FILTER,
+  --mode MODE           The mode in which to run DANCE - one of GENERATE,
                         PLOTHIST, or SELECT. See README for more info
-                        (default: FILTER)
+                        (default: GENERATE)
   --log LEVEL           logging level - one of DEBUG, INFO, WARNING, ERROR,
                         and CRITICAL - See
                         https://docs.python.org/3/howto/logging.html for more
                         information (default: info)
 
-FILTER args:
+GENERATE args:
   --mol2dirs DIR1,DIR2,...
                         a comma-separated list of directories with mol2 files
-                        to be filtered (default: )
-  --output-mols FILENAME.smi
-                        location of SMILES file holding final filtered
-                        molecules (default: output-mols.smi)
-  --output-tri-n-data FILENAME.csv
-                        location of CSV file holding data about trivalent
-                        nitrogens (with molecules in the same order as the
-                        SMILES file (default: output-tri-n-data.csv)
-  --output-tri-n-bonds FILENAME.csv
-                        location of CSV file holding data about individual
-                        bonds around trivalent nitrogens (default: output-tri-
-                        n-bonds.csv)
+                        to be filtered and saved (default: )
+  --generate-output-dir DIRNAME
+                        directory for saving the output - refer to beginning
+                        of this msg (default: generate-output)
 
 PLOTHIST args:
-  --tri-n-data-csvs CSV1,CSV2,...
-                        a comma-separated list of CSV files, each of the same
-                        form as the output-tri-n-data.csv generated in the
-                        FILTER step (default: )
+  --wiberg-csvs CSV1,CSV2,...
+                        a comma-separated list of CSV files with a column
+                        containing wiberg bond orders - these files are likely
+                        generated in the GENERATE step (default: )
+  --wiberg-csv-col INT  Column in the CSV files holding the Wiberg bond orders
+                        (0-indexed) (default: 0)
   --output-histograms FILENAME.pdf
                         location of PDF file for histograms (default: output-
                         histograms.pdf)
   --hist-min FLOAT      Minimum bin for histogram (default: 2.0)
   --hist-max FLOAT      Maximum bin for histogram (default: 3.4)
   --hist-step FLOAT     Step/bin size for histogram (default: 0.1)
+
+SELECT args:
+  --input-binaries OEB,BINARY,OEB,BINARY,...
+                        a comma-separated list of pairs of OEB and
+                        DanceProperties binary files - each OEB should
+                        correspond to the binary file next to it (default: )
+  --select-output-dir DIRNAME
+                        directory for saving the output - refer to beginning
+                        of this msg (default: select-output)
 ```
 
 ### Example
 
-#### FILTER mode
+#### GENERATE mode
 
 ```
-dance.py --mode FILTER \
+dance.py --mode GENERATE \
          --mol2dirs dir1,dir2,dir3 \
-         --output-mols output-mols.smi \
-         --output-tri-n-data output-tri-n-data.csv \
-         --output-tri-n-bonds output-tri-n-bonds.csv \
+         --generate-output-dir my-output \
          --log debug
 ```
 
-Reads in molecules from dir1, dir2, and dir3, filters them, and writes the
-resulting molecules to output-mols.smi. Additional data are stored in
-output-tri-n-data.csv and output-tri-n-bonds.csv. Prints log messages as low as
-DEBUG to stderr.
+Reads in molecules from dir1, dir2, and dir3, filters out the ones with a single
+trivalent nitrogen atom, and writes the results to files in a directory called
+my-output. Prints log messages as low as DEBUG to stderr.
 
 #### PLOTHIST mode
 
 ```
 dance.py --mode PLOTHIST \
-         --tri-n-data-csvs data1.csv,data2.csv,data3.csv \
+         --wiberg-csvs data1.csv,data2.csv,data3.csv \
          --output-histograms output-histograms.pdf \
          --log debug
 ```
@@ -147,7 +169,15 @@ output-histograms.pdf. Prints log messages as low as DEBUG to stderr.
 
 #### SELECT mode
 
-(Coming soon)
+```
+dance.py --mode SELECT \
+         --input-binaries mol1.oeb,prop1.binary,mol2.oeb,prop2.binary \
+         --select-output-dir my-output
+```
+
+Reads in molecules and their properties from mol1.oeb, prop1.binary, mol2.oeb,
+and prop2.binary, selects some of them, and writes the results to files in a
+directory called my-output.
 
 ## A Note on Logging
 
@@ -158,5 +188,5 @@ have to redirect stderr to a file. For example, the following command will
 redirect stderr to a file called status.txt when running dance.py.
 
 ```
-dance.py --mode FILTER --mol2dirs dir1,dir2,dir3 2> status.txt
+dance.py --mode GENERATE --mol2dirs dir1,dir2,dir3 2> status.txt
 ```

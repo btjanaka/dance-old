@@ -18,6 +18,16 @@ from openeye import oechem
 # Tag used for storing the key to DanceProperties data in a molecule
 DANCE_PROPS_KEY = "DancePropertiesKey"
 
+# Tag used for storing the charged copy (using AM1 charges) of a molecule's
+# first conformation
+DANCE_CHARGED_COPY_KEY = "DanceChargedCopy"
+
+# Tag used for storing Wiberg Bond Orders in molecules - needed because we want
+# to save molecules and their properties, but the default object holding the
+# bond orders - OEAM1Results - is not save-able using either pickle or Openeye
+# tools
+DANCE_BOND_ORDER_KEY = "DanceWibergBondOrder"
+
 #
 # Classes
 #
@@ -80,13 +90,46 @@ def add_dance_property(mol: oechem.OEMol, prop: DanceProperties,
     properties in the array.
     """
     properties.append(prop)
-    mol.SetData(DANCE_PROPS_KEY, len(properties) - 1)
+    set_dance_property(mol, len(properties) - 1)
 
 
 def get_dance_property(mol: oechem.OEMol,
                        properties: [DanceProperties]) -> DanceProperties:
     """
-    Returns the DanceProperties associated with a give molecule from the array.
+    Returns the DanceProperties associated with a given molecule from the array.
     """
     key = mol.GetData(DANCE_PROPS_KEY)
     return properties[key]
+
+
+def set_dance_property(mol: oechem.OEMol, key: int):
+    """
+    Sets the DANCE_PROPS_KEY data of a molecule.
+    """
+    mol.SetData(DANCE_PROPS_KEY, key)
+
+
+def clean_properties_list(mols: [oechem.OEMol], properties: [DanceProperties]):
+    """
+    Modifies the given molecules and properties in-place to remove any
+    properties not being used anymore.
+    """
+    props_copy = properties.copy()
+    properties.clear()
+    for mol in mols:
+        add_dance_property(mol, get_dance_property(mol, props_copy), properties)
+
+
+def append_properties_list(mols: [oechem.OEMol], properties: [DanceProperties],
+                           mols2: [oechem.OEMol],
+                           properties2: [DanceProperties]):
+    """
+    Adds on the molecules and properties in the second set of molecules and
+    properties to the first set. This is not necessarily a trivial task because
+    the keys in the second list of molecules have to be modified to point to the
+    correct properties.
+    """
+    for i in range(len(mols2)):
+        set_dance_property(mols2[i], len(mols) + i)
+    mols.extend(mols2)
+    properties.extend(properties2)

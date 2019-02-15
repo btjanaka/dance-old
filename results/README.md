@@ -15,3 +15,6 @@ is divided into 9 sections, so much of the results here involve 9 sections.
 - `output-histograms-zoomed-in.pdf` - the same as `output-histograms.pdf`,
   except the bond orders are shown in the range 2.80 to 3.12 to make it easier
   to visualize the range where the most molecules were situated
+- `output-histogram-bonds.pdf` - histograms showing the distribution of Wiberg
+  bond order for individual bonds around the trivalent nitrogen atom in the
+  molecules
