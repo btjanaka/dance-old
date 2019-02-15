@@ -90,13 +90,46 @@ def add_dance_property(mol: oechem.OEMol, prop: DanceProperties,
     properties in the array.
     """
     properties.append(prop)
-    mol.SetData(DANCE_PROPS_KEY, len(properties) - 1)
+    set_dance_property(mol, len(properties) - 1)
 
 
 def get_dance_property(mol: oechem.OEMol,
                        properties: [DanceProperties]) -> DanceProperties:
     """
-    Returns the DanceProperties associated with a give molecule from the array.
+    Returns the DanceProperties associated with a given molecule from the array.
     """
     key = mol.GetData(DANCE_PROPS_KEY)
     return properties[key]
+
+
+def set_dance_property(mol: oechem.OEMol, key: int):
+    """
+    Sets the DANCE_PROPS_KEY data of a molecule.
+    """
+    mol.SetData(DANCE_PROPS_KEY, key)
+
+
+def clean_properties_list(mols: [oechem.OEMol], properties: [DanceProperties]):
+    """
+    Modifies the given molecules and properties in-place to remove any
+    properties not being used anymore.
+    """
+    props_copy = properties.copy()
+    properties.clear()
+    for mol in mols:
+        add_dance_property(mol, get_dance_property(mol, props_copy), properties)
+
+
+def append_properties_list(mols: [oechem.OEMol], properties: [DanceProperties],
+                           mols2: [oechem.OEMol],
+                           properties2: [DanceProperties]):
+    """
+    Adds on the molecules and properties in the second set of molecules and
+    properties to the first set. This is not necessarily a trivial task because
+    the keys in the second list of molecules have to be modified to point to the
+    correct properties.
+    """
+    for i in range(len(mols2)):
+        set_dance_property(mols2[i], len(mols) + i)
+    mols.extend(mols2)
+    properties.extend(properties2)

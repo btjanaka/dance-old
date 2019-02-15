@@ -38,7 +38,7 @@ The heart of the tool is `dance.py`. It should be used as follows:
    several bins, and selects the smallest molecules from each bin. It then
    generates an [output directory](#output-directories).
 
-_note: SELECT mode coming soon_
+_note: SELECT mode in development
 
 ## Dependencies
 
@@ -75,6 +75,8 @@ usage: dance.py [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
                 [--generate-output-dir DIRNAME] [--wiberg-csvs CSV1,CSV2,...]
                 [--wiberg-csv-col INT] [--output-histograms FILENAME.pdf]
                 [--hist-min FLOAT] [--hist-max FLOAT] [--hist-step FLOAT]
+                [--input-binaries OEB,BINARY,OEB,BINARY,...]
+                [--select-output-dir DIRNAME]
 
 Performs various functions for selecting molecules from a database. It will do
 the following based on the mode. GENERATE - Take in directories of mol2 files,
@@ -125,6 +127,15 @@ PLOTHIST args:
   --hist-min FLOAT      Minimum bin for histogram (default: 2.0)
   --hist-max FLOAT      Maximum bin for histogram (default: 3.4)
   --hist-step FLOAT     Step/bin size for histogram (default: 0.1)
+
+SELECT args:
+  --input-binaries OEB,BINARY,OEB,BINARY,...
+                        a comma-separated list of pairs of OEB and
+                        DanceProperties binary files - each OEB should
+                        correspond to the binary file next to it (default: )
+  --select-output-dir DIRNAME
+                        directory for saving the output - refer to beginning
+                        of this msg (default: select-output)
 ```
 
 ### Example
@@ -158,7 +169,15 @@ output-histograms.pdf. Prints log messages as low as DEBUG to stderr.
 
 #### SELECT mode
 
-(Coming soon)
+```
+dance.py --mode SELECT \
+         --input-binaries mol1.oeb,prop1.binary,mol2.oeb,prop2.binary \
+         --select-output-dir my-output
+```
+
+Reads in molecules and their properties from mol1.oeb, prop1.binary, mol2.oeb,
+and prop2.binary, selects some of them, and writes the results to files in a
+directory called my-output.
 
 ## A Note on Logging
 
