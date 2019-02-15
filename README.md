@@ -3,6 +3,7 @@
 <!-- toc -->
 
 - [Dependencies](#dependencies)
+- [Output Directories](#output-directories)
 - [Usage](#usage)
   - [Example](#example)
     - [GENERATE mode](#generate-mode)
@@ -19,19 +20,8 @@ The heart of the tool is `dance.py`. It should be used as follows:
 
 1. Use GENERATE mode to generate an initial set of trivalent nitrogen molecules
    from the database. The database must be represented as directories consisting
-   of mol2 files. GENERATE mode ultimately generates the following files (which
-   you may choose to rename when invoking `dance.py`):
-   - `output-mols.smi`: SMILES strings representing the molecules
-   - `output-mols.oeb`: an OEB (Openeye Binary) file for raw molecule data from
-     DanceGenerator
-   - `output-tri-n-data.csv`: holds data about the trivalent nitrogen in each
-     molecule - the total Wiberg bond order, total bond angle, and total bond
-     length of the bonds surrounding the nitrogen
-   - `output-tri-n-bonds.csv`: holds data about the individual bonds connected
-     to the trivalent nitrogen - the Wiberg bond order, bond length, and element
-     of each bond
-   - `dance-props.binary`: binary file for storing list of DanceProperties with
-     data about the molecules
+   of mol2 files. GENERATE mode ultimately generates an output directory with
+   several files (see [Output Directories](#output-directories))
 2. Use PLOTHIST mode to visualize the Wiberg bond orders from the previous step.
    This requires either the `output-tri-n-data.csv` file or the
    `output-tri-n-bonds.csv` from the GENERATE step. Note that if you choose the
@@ -45,8 +35,8 @@ The heart of the tool is `dance.py`. It should be used as follows:
      bond orders in all files combined (put on one plot together)
 3. Use SELECT mode to make a final selection of molecules. This mode takes in
    all the molecules, sorts them again by Wiberg bond order, splits them into
-   several bins, and selects the smallest molecules from each bin. This requires
-   the `output-mols.smi` and `output-tri-n-data.csv` from the GENERATE step.
+   several bins, and selects the smallest molecules from each bin. It then
+   generates an [output directory](#output-directories).
 
 _note: SELECT mode coming soon_
 
@@ -59,6 +49,22 @@ DANCE requires the following libraries to operate:
 - Matplotlib
 - Numpy
 
+## Output Directories
+
+The following files are generated whenever DANCE generates an "output directory"
+of files.
+
+- `mols.smi`: SMILES strings representing the molecules
+- `mols.oeb`: an OEB (Openeye Binary) file for raw molecule data
+- `tri-n-data.csv`: holds data about the trivalent nitrogen in each
+  molecule - the total Wiberg bond order, total bond angle, and total bond
+  length of the bonds surrounding the nitrogen
+- `tri-n-bonds.csv`: holds data about the individual bonds connected
+  to the trivalent nitrogen - the Wiberg bond order, bond length, and element
+  of each bond
+- `props.binary`: binary file for storing list of DanceProperties with
+  data about the molecules
+
 ## Usage
 
 Below is the help message for dance.py. Adding `python` before the
@@ -66,22 +72,23 @@ invocation of dance.py is optional.
 
 ```
 usage: dance.py [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
-                [--output-mols-smi FILENAME.smi]
-                [--output-mols-oeb FILENAME.oeb]
-                [--output-tri-n-data FILENAME.csv]
-                [--output-tri-n-bonds FILENAME.csv]
-                [--output-props-binary FILENAME.binary]
-                [--wiberg-csvs CSV1,CSV2,...] [--wiberg-csv-col INT]
-                [--output-histograms FILENAME.pdf] [--hist-min FLOAT]
-                [--hist-max FLOAT] [--hist-step FLOAT]
+                [--generate-output-dir DIRNAME] [--wiberg-csvs CSV1,CSV2,...]
+                [--wiberg-csv-col INT] [--output-histograms FILENAME.pdf]
+                [--hist-min FLOAT] [--hist-max FLOAT] [--hist-step FLOAT]
 
 Performs various functions for selecting molecules from a database. It will do
 the following based on the mode. GENERATE - Take in directories of mol2 files,
 generate the initial set of molecules with a single trivalent nitrogen, and
-write the molecules and accompanying data to various files. PLOTHIST - Take in
-data files from the previous step and use matplotlib to generate histograms of
-the Wiberg bond orders. SELECT - Make a final selection of molecules from the
-ones generated in the first step. See README for more info.
+write results to a directory. PLOTHIST - Take in data files from the previous
+step and use matplotlib to generate histograms of the Wiberg bond orders.
+SELECT - Make a final selection of molecules from the ones generated in the
+GENERATE step and write results to a directory. Note that when a part of this
+script "writes results to a directory", that means it generates a directory
+with the following files: mols.smi - molecules from that step stored in SMILES
+format, mols.oeb - the same molecules stored in OEB (Openeye Binary) format,
+tri_n_data.csv - data about the trivalent nitrogen in each molecule,
+tri_n_bonds.csv - data about the bonds around the trivalent nitrogen in each
+molecule, props.binary - binary storage of DanceProperties for the molecules
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -101,24 +108,9 @@ GENERATE args:
   --mol2dirs DIR1,DIR2,...
                         a comma-separated list of directories with mol2 files
                         to be filtered and saved (default: )
-  --output-mols-smi FILENAME.smi
-                        location of SMILES file holding final generated
-                        molecules (default: output-mols.smi)
-  --output-mols-oeb FILENAME.oeb
-                        location of OEB (Openeye Binary) file holding final
-                        molecules (default: output-mols.oeb)
-  --output-tri-n-data FILENAME.csv
-                        location of CSV file holding data about trivalent
-                        nitrogens (with molecules in the same order as the
-                        SMILES file (default: output-tri-n-data.csv)
-  --output-tri-n-bonds FILENAME.csv
-                        location of CSV file holding data about individual
-                        bonds around trivalent nitrogens (default: output-tri-
-                        n-bonds.csv)
-  --output-props-binary FILENAME.binary
-                        location of binary file holding DanceProperties
-                        objects with data about the molecules (default:
-                        output-props.binary)
+  --generate-output-dir DIRNAME
+                        directory for saving the output - refer to beginning
+                        of this msg (default: generate-output)
 
 PLOTHIST args:
   --wiberg-csvs CSV1,CSV2,...
@@ -142,19 +134,13 @@ PLOTHIST args:
 ```
 dance.py --mode GENERATE \
          --mol2dirs dir1,dir2,dir3 \
-         --output-mols-smi output-mols.smi \
-         --output-mols-oeb output-mols.oeb \
-         --output-tri-n-data output-tri-n-data.csv \
-         --output-tri-n-bonds output-tri-n-bonds.csv \
-         --output-props-binary output-props.binary \
+         --generate-output-dir my-output \
          --log debug
 ```
 
 Reads in molecules from dir1, dir2, and dir3, filters out the ones with a single
-trivalent nitrogen atom, and writes the resulting molecules to output-mols.smi
-and output-mols.oeb.  Additional data are stored in output-tri-n-data.csv and
-output-tri-n-bonds.csv, and DanceProperties are stored in output-props.binary.
-Prints log messages as low as DEBUG to stderr.
+trivalent nitrogen atom, and writes the results to files in a directory called
+my-output. Prints log messages as low as DEBUG to stderr.
 
 #### PLOTHIST mode
 

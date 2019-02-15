@@ -4,6 +4,7 @@
 
 import argparse
 import logging
+import os
 from dancelib import dancegenerator
 from dancelib import dancesaver
 from dancelib import dancewibhist
@@ -17,11 +18,20 @@ def parse_commandline_flags() -> {str: "argument value"}:
             "database. It will do the following based on the mode. "
             "GENERATE - Take in directories of mol2 files, generate the "
             "initial set of molecules with a single trivalent nitrogen, and "
-            "write the molecules and accompanying data to various files. "
+            "write results to a directory. "
             "PLOTHIST - Take in data files from the previous step and use "
             "matplotlib to generate histograms of the Wiberg bond orders. "
             "SELECT - Make a final selection of molecules from the ones "
-            "generated in the first step. "),
+            "generated in the GENERATE step and write results to a directory. "
+            "Note that when a part of this script \"writes results to a "
+            "directory\", that means it generates a directory with the "
+            "following files: mols.smi - molecules from that step stored "
+            "in SMILES format, mols.oeb - the same molecules stored in OEB "
+            "(Openeye Binary) format, tri_n_data.csv - data about the "
+            "trivalent nitrogen in each molecule, tri_n_bonds.csv - data about "
+            "the bonds around the trivalent nitrogen in each molecule, "
+            "props.binary - binary storage of DanceProperties for the "
+            "molecules"),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     mode_agnostic = parser.add_argument_group(
@@ -48,33 +58,10 @@ def parse_commandline_flags() -> {str: "argument value"}:
         help=("a comma-separated list of directories with mol2 files to be "
               "filtered and saved"))
     generate_group.add_argument(
-        "--output-mols-smi",
-        default="output-mols.smi",
-        metavar="FILENAME.smi",
-        help="location of SMILES file holding final generated molecules")
-    generate_group.add_argument(
-        "--output-mols-oeb",
-        default="output-mols.oeb",
-        metavar="FILENAME.oeb",
-        help="location of OEB (Openeye Binary) file holding final molecules")
-    generate_group.add_argument(
-        "--output-tri-n-data",
-        default="output-tri-n-data.csv",
-        metavar="FILENAME.csv",
-        help=("location of CSV file holding data about trivalent nitrogens "
-              "(with molecules in the same order as the SMILES file"))
-    generate_group.add_argument(
-        "--output-tri-n-bonds",
-        default="output-tri-n-bonds.csv",
-        metavar="FILENAME.csv",
-        help=("location of CSV file holding data about individual bonds around "
-              "trivalent nitrogens"))
-    generate_group.add_argument(
-        "--output-props-binary",
-        default="output-props.binary",
-        metavar="FILENAME.binary",
-        help=("location of binary file holding DanceProperties objects with "
-              "data about the molecules"))
+        "--generate-output-dir",
+        default="generate-output",
+        metavar="DIRNAME",
+        help="directory for saving the output - refer to beginning of this msg")
 
     plothist_group = parser.add_argument_group("PLOTHIST args")
     plothist_group.add_argument(
@@ -129,14 +116,7 @@ def parse_commandline_flags() -> {str: "argument value"}:
             comma_sep_list].split(",")
 
     # Check file extensions and append them if necessary
-    for arg, extension in (
-        ("output_mols_smi", "smi"),
-        ("output_mols_oeb", "oeb"),
-        ("output_tri_n_data", "csv"),
-        ("output_tri_n_bonds", "csv"),
-        ("output_props_binary", "binary"),
-        ("output_histograms", "pdf"),
-    ):
+    for arg, extension in (("output_histograms", "pdf"),):
         if not args[arg].endswith("." + extension):
             args[arg] += "." + extension
 
@@ -144,7 +124,7 @@ def parse_commandline_flags() -> {str: "argument value"}:
 
 
 def configure_logging(loglevel: str):
-    """Configure Python's logging library"""
+    """Configures Python's logging library"""
     numeric_level = getattr(logging, loglevel.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError(f"Invalid log level: {loglevel}")
@@ -152,15 +132,30 @@ def configure_logging(loglevel: str):
         format="%(levelname)s: %(message)s", level=numeric_level)
 
 
+def create_filenames_for_dir(dirname: str) -> {str: str}:
+    """
+    Generates a dict of parameters that can be passed in to DanceSaver -
+    each value in the dict will be a file that ends up in the given directory
+    """
+    return {
+        "output_mols_smi": f"{dirname}/mols.smi",
+        "output_mols_oeb": f"{dirname}/mols.oeb",
+        "output_tri_n_data": f"{dirname}/tri-n-data.csv",
+        "output_tri_n_bonds": f"{dirname}/tri-n-bonds.csv",
+        "output_props_binary": f"{dirname}/props.binary",
+    }
+
+
 def run_generator(args):
-    """Generate molecules from the database."""
+    """Generates and saves molecules from the database."""
     dgenerator = dancegenerator.DanceGenerator(args["mol2dirs"])
     dgenerator.run()
     mols, properties = dgenerator.get_data()
+
+    os.makedirs(args["generate_output_dir"], exist_ok=True)
     dsaver = dancesaver.DanceSaver(
-        mols, properties, args["output_mols_smi"], args["output_mols_oeb"],
-        args["output_tri_n_data"], args["output_tri_n_bonds"],
-        args["output_props_binary"])
+        mols, properties,
+        **create_filenames_for_dir(args["generate_output_dir"]))
     dsaver.run()
 
 
