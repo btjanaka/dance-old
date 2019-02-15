@@ -8,9 +8,10 @@ from dancelib import dancerunbase
 
 
 class DanceSaver(dancerunbase.DanceRunBase):
-    """Saves molecule data from DanceGenerator several files
+    """Saves molecule data from DanceGenerator several files.
 
-    See the attributes starting with _output for a list of files saved.
+    See the attributes starting with _output for a list of files saved. Note
+    that if any of these are passed as None, they will not be saved.
 
     Molecules passed in should have the danceprops.DANCE_PROPS_KEY data set;
     failure to have this results in undefined behavior.
@@ -38,9 +39,9 @@ class DanceSaver(dancerunbase.DanceRunBase):
     # yapf: disable (otherwise has weird formatting for params)
     def __init__(self, mols: [oechem.OEMol],
                  properties: [danceprops.DanceProperties],
-                 output_mols_smi: str, output_mols_oeb: str,
-                 output_tri_n_data: str, output_tri_n_bonds: str,
-                 output_props_binary: str):
+                 output_mols_smi=None, output_mols_oeb=None,
+                 output_tri_n_data=None, output_tri_n_bonds=None,
+                 output_props_binary=None):
         super().__init__()
         self._mols = mols
         self._properties = properties
@@ -55,10 +56,11 @@ class DanceSaver(dancerunbase.DanceRunBase):
         """Perform all saving actions"""
         super().check_run_fatal()
         logging.info("STARTING SAVE")
-        self._write_mols_to_smi()
-        self._write_mols_to_oeb()
-        self._write_data_to_csv()
-        self._write_props_to_binary()
+        if self._output_mols_smi is not None: self._write_mols_to_smi()
+        if self._output_mols_oeb is not None: self._write_mols_to_oeb()
+        if self._output_tri_n_data is not None: self._write_data_to_csv()
+        if self._output_tri_n_bonds is not None: self._write_bonds_to_csv()
+        if self._output_props_binary is not None: self._write_props_to_binary()
         logging.info("FINISHED SAVE")
 
     #
@@ -88,25 +90,30 @@ class DanceSaver(dancerunbase.DanceRunBase):
                                            oechem.OEFormat_OEB)
 
     def _write_data_to_csv(self):
-        """Writes the data about trivalent nitrogens and their bonds to CSVs"""
+        """Writes the data about trivalent nitrogens to a CSV"""
         logging.info(f"Writing tri-n data to {self._output_tri_n_data}")
-        logging.info(f"Writing bond data to {self._output_tri_n_bonds}")
 
         with open(self._output_tri_n_data, 'w') as datacsv:
-            with open(self._output_tri_n_bonds, 'w') as bondcsv:
-                datacsv.write(
-                    "tri_n_bond_order,tri_n_bond_angle,tri_n_bond_length\n")
-                bondcsv.write("bond_order,bond_length,element\n")
+            datacsv.write(
+                "tri_n_bond_order,tri_n_bond_angle,tri_n_bond_length\n")
+            for mol in self._mols:
+                prop = danceprops.get_dance_property(mol, self._properties)
+                datacsv.write(f"{prop.tri_n_bond_order},"
+                              f"{prop.tri_n_bond_angle},"
+                              f"{prop.tri_n_bond_length}\n")
 
-                for mol in self._mols:
-                    prop = danceprops.get_dance_property(mol, self._properties)
-                    datacsv.write(f"{prop.tri_n_bond_order},"
-                                  f"{prop.tri_n_bond_angle},"
-                                  f"{prop.tri_n_bond_length}\n")
-                    for bond in prop.tri_n_bonds:
-                        bondcsv.write(f"{bond.bond_order},"
-                                      f"{bond.bond_length},"
-                                      f"{bond.element}\n")
+    def _write_bonds_to_csv(self):
+        """Writes data about bonds around trivalent nitrogens to a CSV"""
+        logging.info(f"Writing bond data to {self._output_tri_n_bonds}")
+        with open(self._output_tri_n_bonds, 'w') as bondcsv:
+            bondcsv.write("bond_order,bond_length,element\n")
+
+            for mol in self._mols:
+                prop = danceprops.get_dance_property(mol, self._properties)
+                for bond in prop.tri_n_bonds:
+                    bondcsv.write(f"{bond.bond_order},"
+                                  f"{bond.bond_length},"
+                                  f"{bond.element}\n")
 
     def _write_props_to_binary(self):
         """Writes the properties objects to a binary file"""
