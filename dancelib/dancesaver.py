@@ -1,10 +1,37 @@
-"""Provides a class for saving data about molecules."""
+"""Provides a class and functions for saving data about molecules."""
 
 import logging
+import os
 import pickle
 from openeye import oechem
 from dancelib import danceprops
 from dancelib import dancerunbase
+
+
+def create_filenames_for_dir(dirname: str) -> {str: str}:
+    """
+    Generates a dict of parameters that can be passed in to DanceSaver as a
+    kwarg. Each value in the dict will be a file that ends up in the given
+    directory
+    """
+    return {
+        "output_mols_smi": f"{dirname}/mols.smi",
+        "output_mols_oeb": f"{dirname}/mols.oeb",
+        "output_tri_n_data": f"{dirname}/tri-n-data.csv",
+        "output_tri_n_bonds": f"{dirname}/tri-n-bonds.csv",
+        "output_props_binary": f"{dirname}/props.binary",
+    }
+
+
+def mkdir_and_save(mols: [oechem.OEMol],
+                   properties: [danceprops.DanceProperties], dirname: str):
+    """
+    Creates a directory and saves files related to the given mols and
+    properites to it.
+    """
+    os.makedirs(dirname, exist_ok=True)
+    dsaver = DanceSaver(mols, properties, **create_filenames_for_dir(dirname))
+    dsaver.run()
 
 
 class DanceSaver(dancerunbase.DanceRunBase):

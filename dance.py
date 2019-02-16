@@ -4,7 +4,6 @@
 
 import argparse
 import logging
-import os
 import pickle
 from openeye import oechem
 from dancelib import dancegenerator
@@ -148,32 +147,6 @@ def configure_logging(loglevel: str):
         format="%(levelname)s: %(message)s", level=numeric_level)
 
 
-def create_filenames_for_dir(dirname: str) -> {str: str}:
-    """
-    Generates a dict of parameters that can be passed in to DanceSaver -
-    each value in the dict will be a file that ends up in the given directory
-    """
-    return {
-        "output_mols_smi": f"{dirname}/mols.smi",
-        "output_mols_oeb": f"{dirname}/mols.oeb",
-        "output_tri_n_data": f"{dirname}/tri-n-data.csv",
-        "output_tri_n_bonds": f"{dirname}/tri-n-bonds.csv",
-        "output_props_binary": f"{dirname}/props.binary",
-    }
-
-
-def mkdir_and_save(mols: [oechem.OEMol],
-                   properties: [danceprops.DanceProperties], dirname: str):
-    """
-    Creates a directory and saves files related to the given mols and
-    properites to it.
-    """
-    os.makedirs(dirname, exist_ok=True)
-    dsaver = dancesaver.DanceSaver(mols, properties,
-                                   **create_filenames_for_dir(dirname))
-    dsaver.run()
-
-
 def read_binaries(oebfiles: [str], binfiles: [str]
                  ) -> ([oechem.OEMol], [danceprops.DanceProperties]):
     """
@@ -204,7 +177,7 @@ def run_generator(args):
     dgenerator = dancegenerator.DanceGenerator(args["mol2dirs"])
     dgenerator.run()
     mols, properties = dgenerator.get_data()
-    mkdir_and_save(mols, properties, args["generate_output_dir"])
+    dancesaver.mkdir_and_save(mols, properties, args["generate_output_dir"])
 
 
 def run_plothist(args):
@@ -222,7 +195,7 @@ def run_select(args):
     dselector = danceselector.DanceSelector(mols, properties)
     dselector.run()
     mols, properties = dselector.get_data()
-    mkdir_and_save(mols, properties, args["select_output_dir"])
+    dancesaver.mkdir_and_save(mols, properties, args["select_output_dir"])
 
 
 def main():
