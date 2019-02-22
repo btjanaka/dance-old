@@ -33,12 +33,12 @@ The heart of the tool is `dance.py`. It should be used as follows:
    - `output-histogram.pdf`: a PDF file holding histograms of the bond orders in
      every output-tri-n-data.csv file you pass in, as well as a histogram of the
      bond orders in all files combined (put on one plot together)
-3. Use SELECT mode to make a final selection of molecules. This mode takes in
-   all the molecules, sorts them again by Wiberg bond order, splits them into
-   several bins, and selects the smallest molecules from each bin. It then
-   generates an [output directory](#output-directories).
-
-_note: SELECT mode in development
+3. Use SELECT mode to make a final selection of molecules. This mode separates
+   molecules by the total Wiberg bond order around the trivalent nitrogen, as
+   well as a "fingerprint" consisting of the atomic number, connectivity,
+   aromaticity, and Wiberg bond order of the atoms connected to the trivalent
+   nitrogen. It then selects the smallest molecules in each bin and generates an
+   [output directory](#output-directories) with the final selected molecules.
 
 ## Dependencies
 
@@ -76,6 +76,7 @@ usage: dance.py [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
                 [--wiberg-csv-col INT] [--output-histograms FILENAME.pdf]
                 [--hist-min FLOAT] [--hist-max FLOAT] [--hist-step FLOAT]
                 [--input-binaries OEB,BINARY,OEB,BINARY,...]
+                [--select-bin-size FLOAT] [--wiberg-precision FLOAT]
                 [--select-output-dir DIRNAME]
 
 Performs various functions for selecting molecules from a database. It will do
@@ -133,6 +134,13 @@ SELECT args:
                         a comma-separated list of pairs of OEB and
                         DanceProperties binary files - each OEB should
                         correspond to the binary file next to it (default: )
+  --select-bin-size FLOAT
+                        bin size for separating molecules by Wiberg bond order
+                        (default: 0.02)
+  --wiberg-precision FLOAT
+                        value to which to round the Wiberg bond orders in the
+                        fingerprints; e.g. round to the nearest 0.02 (default:
+                        0.02)
   --select-output-dir DIRNAME
                         directory for saving the output - refer to beginning
                         of this msg (default: select-output)

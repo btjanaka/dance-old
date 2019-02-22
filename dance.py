@@ -114,6 +114,19 @@ def parse_commandline_flags() -> {str: "argument value"}:
               "binary files - each OEB should correspond to the binary file "
               "next to it"))
     select_group.add_argument(
+        "--select-bin-size",
+        default=0.02,
+        metavar="FLOAT",
+        type=float,
+        help="bin size for separating molecules by Wiberg bond order")
+    select_group.add_argument(
+        "--wiberg-precision",
+        default=0.02,
+        metavar="FLOAT",
+        type=float,
+        help=("value to which to round the Wiberg bond orders in the "
+              "fingerprints; e.g. round to the nearest 0.02"))
+    select_group.add_argument(
         "--select-output-dir",
         default="select-output",
         metavar="DIRNAME",
@@ -192,7 +205,8 @@ def run_select(args):
     """Makes final selections of molecules."""
     mols, properties = read_binaries(args["input_binaries"][0::2],
                                      args["input_binaries"][1::2])
-    dselector = danceselector.DanceSelector(mols, properties)
+    dselector = danceselector.DanceSelector(
+        mols, properties, args["select_bin_size"], args["wiberg_precision"])
     dselector.run()
     mols, properties = dselector.get_data()
     dancesaver.mkdir_and_save(mols, properties, args["select_output_dir"])
