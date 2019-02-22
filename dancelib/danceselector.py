@@ -66,7 +66,9 @@ class DanceSelector(dancerunbase.DanceRunBase):
     def _add_fingerprints(self):
         """Adds fingerprints to all of the molecules"""
         for mol in self._mols:
-            print(mol.GetData())
+            if not self._is_valid_molecule(mol):
+                logging.debug(f"Ignored molecule {mol.GetTitle()}")
+                continue
             charged_copy = mol.GetData(danceprops.DANCE_CHARGED_COPY_KEY)
             tri_n = None
             for atom in charged_copy.GetAtoms(oechem.OEIsInvertibleNitrogen()):
@@ -84,6 +86,7 @@ class DanceSelector(dancerunbase.DanceRunBase):
         molecules are further separated by fingerprints.
         """
         for mol in self._mols:
+            if not self._is_valid_molecule(mol): continue
             bond_order = danceprops.get_dance_property(
                 mol, self._properties).tri_n_bond_order
             bond_order = int(bond_order / self._bin_size) * self._bin_size
@@ -96,3 +99,13 @@ class DanceSelector(dancerunbase.DanceRunBase):
         for bin_id in sorted_bins:
             logging.debug(
                 f"({bin_id[0]}, {bin_id[1]}) -> {len(self._bins[bin_id])} mols")
+
+    @staticmethod
+    def _is_valid_molecule(mol: oechem.OEMol) -> bool:
+        """
+        Some of the molecules coming into the DanceSelector may not be valid.
+        DanceGenerator may find there was an error in charge calculations, in
+        which case the charged copy was not assigned to the molecule. This
+        function checks for that.
+        """
+        return mol.HasData(danceprops.DANCE_CHARGED_COPY_KEY)
