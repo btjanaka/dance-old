@@ -31,13 +31,8 @@ describes how to merge code changes into dance.
   mergability, compilation and test suite compliance; the results of these tests
   will be visible on the PR page.
 - If you're providing a new feature, you must add test cases and documentation.
-- When the code is ready to go, make sure you run the test suite using pytest.
-  pytest is also run as a pre-commit hook.
-- When you're ready to be considered for merging, check the "Ready to go"
-  box on the PR page to let the dance devs know that the changes are complete.
-  The code will not be merged until this box is checked, the continuous
-  integration returns checkmarks,
-  and multiple core developers give "Approved" reviews.
+- When the code is ready to go, make sure to run the pre-commit.sh script in the
+  devtools.
 
 # Additional Resources
 
