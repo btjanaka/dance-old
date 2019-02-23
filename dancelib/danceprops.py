@@ -114,6 +114,12 @@ class DanceFingerprint:
         self.data.sort()
         self.data = tuple(self.data)
 
+    def __hash__(self):
+        return hash(self.data)
+
+    def __eq__(self, rhs):
+        return self.data == rhs.data
+
     def __lt__(self, rhs):
         return self.data < rhs.data
 

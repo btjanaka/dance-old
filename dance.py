@@ -121,7 +121,7 @@ def parse_commandline_flags() -> {str: "argument value"}:
         help="bin size for separating molecules by Wiberg bond order")
     select_group.add_argument(
         "--wiberg-precision",
-        default=0.02,
+        default=0.05,
         metavar="FLOAT",
         type=float,
         help=("value to which to round the Wiberg bond orders in the "
