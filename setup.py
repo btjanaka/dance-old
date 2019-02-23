@@ -21,7 +21,7 @@ setup(
         "openeye-toolkits",
     ],
     extras_require={
-        "dev": ["pytest"],
+        "dev": ["pytest", "yapf"],
     },
     license="MIT",
     keywords="chemistry molecules forcefield",
