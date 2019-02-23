@@ -4,8 +4,8 @@ from collections import defaultdict
 import logging
 import numpy as np
 from openeye import oechem
-from dancelib import danceprops
-from dancelib import dancerunbase
+from dance import danceprops
+from dance import dancerunbase
 
 
 class DanceSelector(dancerunbase.DanceRunBase):

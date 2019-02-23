@@ -1,0 +1,4 @@
+#!/use/bin/env python3
+
+import dance
+dance.main()

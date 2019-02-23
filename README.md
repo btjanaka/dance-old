@@ -2,7 +2,7 @@
 
 <!-- toc -->
 
-- [Dependencies](#dependencies)
+- [Installation](#installation)
 - [Output Directories](#output-directories)
 - [Usage](#usage)
   - [Example](#example)
@@ -40,14 +40,15 @@ The heart of the tool is `dance.py`. It should be used as follows:
    nitrogen. It then selects the smallest molecules in each bin and generates an
    [output directory](#output-directories) with the final selected molecules.
 
-## Dependencies
+## Installation
 
-DANCE requires the following libraries to operate:
+After cloning this repo, run the following command to install DANCE. You may
+want to set up a [virtualenv](https://virtualenv.pypa.io/en/stable/) first. You
+will also need an Openeye license to be able to use the Openeye toolkits.
 
-- Python standard library
-- Openeye
-- Matplotlib
-- Numpy
+```
+pip install --extra-index-url https://pypi.anaconda.org/openeye/simple -e .
+```
 
 ## Output Directories
 
@@ -71,13 +72,13 @@ Below is the help message for dance.py. Adding `python` before the
 invocation of dance.py is optional.
 
 ```
-usage: dance.py [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
-                [--generate-output-dir DIRNAME] [--wiberg-csvs CSV1,CSV2,...]
-                [--wiberg-csv-col INT] [--output-histograms FILENAME.pdf]
-                [--hist-min FLOAT] [--hist-max FLOAT] [--hist-step FLOAT]
-                [--input-binaries OEB,BINARY,OEB,BINARY,...]
-                [--select-bin-size FLOAT] [--wiberg-precision FLOAT]
-                [--select-output-dir DIRNAME]
+usage: dance [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
+             [--generate-output-dir DIRNAME] [--wiberg-csvs CSV1,CSV2,...]
+             [--wiberg-csv-col INT] [--output-histograms FILENAME.pdf]
+             [--hist-min FLOAT] [--hist-max FLOAT] [--hist-step FLOAT]
+             [--input-binaries OEB,BINARY,OEB,BINARY,...]
+             [--select-bin-size FLOAT] [--wiberg-precision FLOAT]
+             [--select-output-dir DIRNAME]
 
 Performs various functions for selecting molecules from a database. It will do
 the following based on the mode. GENERATE - Take in directories of mol2 files,
@@ -140,7 +141,7 @@ SELECT args:
   --wiberg-precision FLOAT
                         value to which to round the Wiberg bond orders in the
                         fingerprints; e.g. round to the nearest 0.02 (default:
-                        0.02)
+                        0.05)
   --select-output-dir DIRNAME
                         directory for saving the output - refer to beginning
                         of this msg (default: select-output)

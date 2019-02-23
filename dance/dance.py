@@ -6,11 +6,11 @@ import argparse
 import logging
 import pickle
 from openeye import oechem
-from dancelib import dancegenerator
-from dancelib import danceprops
-from dancelib import dancesaver
-from dancelib import danceselector
-from dancelib import dancewibhist
+from dance import dancegenerator
+from dance import danceprops
+from dance import dancesaver
+from dance import danceselector
+from dance import dancewibhist
 
 
 def parse_commandline_flags() -> {str: "argument value"}:
