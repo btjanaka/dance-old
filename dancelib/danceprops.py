@@ -7,6 +7,48 @@ called DANCE_PROPS_KEY telling where to find the properties in the list. This is
 necessary because OEMol's are not allowed to store custom objects in their data.
 The process of adding a molecule to and retrieving a molecule from this list can
 be streamlined by using the add_dance_property and get_dance_property functions.
+
+EXAMPLE
+=======
+
+Consider the following two lists of molecules and their properties.
+
+Molecules (list of oechem.OEMol)
+
+Index | Data
+------|-------------------------
+  0   | ..., DANCE_PROPS_KEY: 2
+  1   | ..., DANCE_PROPS_KEY: 3
+  2   | ..., DANCE_PROPS_KEY: 0
+  3   | ..., DANCE_PROPS_KEY: 1
+
+Properties (list of DanceProperties)
+
+Index | Attributes
+-----------------------------------------------------------------------
+  0   | tri_n_bond_order: 3.3, tri_n_bond_angle: 360,
+      | tri_n_bond_length: 3.245,
+      | tri_n_bonds: [<DanceTriNBond>,<DanceTriNBond>,<DanceTriNBond>],
+      | fingerprint: [<DanceFingerprint>]
+  1   | ...
+  2   | ...
+  3   | ...
+
+Here, each molecule stores a DANCE_PROPS_KEY that tells where in the properties
+list we can find the matching DanceProperties object. For instance, if we wish
+to obtain the properties for molecule 0, we can do:
+
+    index = molecules[0].GetData(DANCE_PROPS_KEY)
+    mol0_props = properties[index]
+
+We can also use a shortcut with get_dance_property:
+
+    mol0_props = get_dance_property(molecules[0], properties)
+
+Then we can access attributes of the properties; for instance, the fingerprint
+would be accessed with:
+
+    mol0_props.fingerprint
 """
 
 from openeye import oechem

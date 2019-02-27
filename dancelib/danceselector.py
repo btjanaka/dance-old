@@ -1,6 +1,7 @@
 """Provides a class for selecting a final set of molecules."""
 
 from collections import defaultdict
+import math
 import logging
 import numpy as np
 from openeye import oechem
@@ -87,11 +88,26 @@ class DanceSelector(dancerunbase.DanceRunBase):
         """
         for mol in self._mols:
             if not self._is_valid_molecule(mol): continue
+
+            # Retrieve the total bond order around the trivalent nitrogen
             bond_order = danceprops.get_dance_property(
                 mol, self._properties).tri_n_bond_order
-            bond_order = int(bond_order / self._bin_size) * self._bin_size
+
+            # Round the total bond order down to the lowest multiple of
+            # bin_size. For instance, if bin_size is 0.02, and the bond_order is
+            # 2.028, it becomes 2.02. This works because
+            # (bond_order / self._bin_size) generates a multiple of the
+            # bin_size. Then floor() finds the next integer less than the
+            # multiple. Finally, multiplying back by bin_size obtains the
+            # nearest actual value.
+            bond_order = math.floor(
+                bond_order / self._bin_size) * self._bin_size
+
+            # Retrieve the fingerprint for the molecule
             fingerprint = danceprops.get_dance_property(
                 mol, self._properties).fingerprint
+
+            # Select the bin for the molecule
             self._bins[bond_order, fingerprint].append(mol)
 
         logging.debug(f"Separated molecules into bins:")
