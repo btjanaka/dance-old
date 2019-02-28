@@ -7,6 +7,48 @@ called DANCE_PROPS_KEY telling where to find the properties in the list. This is
 necessary because OEMol's are not allowed to store custom objects in their data.
 The process of adding a molecule to and retrieving a molecule from this list can
 be streamlined by using the add_dance_property and get_dance_property functions.
+
+EXAMPLE
+=======
+
+Consider the following two lists of molecules and their properties.
+
+Molecules (list of oechem.OEMol)
+
+Index | Data
+------|-------------------------
+  0   | ..., DANCE_PROPS_KEY: 2
+  1   | ..., DANCE_PROPS_KEY: 3
+  2   | ..., DANCE_PROPS_KEY: 0
+  3   | ..., DANCE_PROPS_KEY: 1
+
+Properties (list of DanceProperties)
+
+Index | Attributes
+-----------------------------------------------------------------------
+  0   | tri_n_bond_order: 3.3, tri_n_bond_angle: 360,
+      | tri_n_bond_length: 3.245,
+      | tri_n_bonds: [<DanceTriNBond>,<DanceTriNBond>,<DanceTriNBond>],
+      | fingerprint: [<DanceFingerprint>]
+  1   | ...
+  2   | ...
+  3   | ...
+
+Here, each molecule stores a DANCE_PROPS_KEY that tells where in the properties
+list we can find the matching DanceProperties object. For instance, if we wish
+to obtain the properties for molecule 0, we can do:
+
+    index = molecules[0].GetData(DANCE_PROPS_KEY)
+    mol0_props = properties[index]
+
+We can also use a shortcut with get_dance_property:
+
+    mol0_props = get_dance_property(molecules[0], properties)
+
+Then we can access attributes of the properties; for instance, the fingerprint
+would be accessed with:
+
+    mol0_props.fingerprint
 """
 
 from openeye import oechem
@@ -36,8 +78,7 @@ DANCE_BOND_ORDER_KEY = "DanceWibergBondOrder"
 class DanceProperties:
     """
     DanceProperties stores properties for a given molecule. It assumes the
-    molecule has only one trivalent nitrogen. DanceProperties is intended to be
-    stored in a molecule's data under the DANCE_PROPS tag.
+    molecule has only one trivalent nitrogen.
 
     All attributes are public.
 
@@ -50,6 +91,8 @@ class DanceProperties:
                            (float)
         tri_n_bonds: data about the bonds around the trivalent nitrogen
                      ([DanceTriNBond])
+        fingerprint: provides greater detail about the bonds around the
+                     trivalent nitrogen (DanceFingerprint)
     """
 
     def __init__(self):
@@ -57,6 +100,7 @@ class DanceProperties:
         self.tri_n_bond_angle = 0.0
         self.tri_n_bond_length = 0.0
         self.tri_n_bonds = []
+        self.fingerprint = None
 
 
 class DanceTriNBond:
@@ -75,6 +119,55 @@ class DanceTriNBond:
         self.bond_order = bond_order
         self.bond_length = bond_length
         self.element = element
+
+
+class DanceFingerprint:
+    """
+    DanceFingerprint is used to more uniquely identify the environment around
+    the trivalent nitrogen in a molecule.
+
+    Attributes:
+        data: a tuple of size 3 representing each atom connected to the
+              trivalent nitrogen, each tuple has the form (atomic
+              number, connectivity, aromaticity, Wiberg bond order (rounded to
+              nearest self._precision))
+        _precision: the value to which to round the Wiberg bond orders; e.g.
+                    "round to the nearest 0.02"
+    """
+
+    def __init__(self, tri_n: oechem.OEAtomBase, precision):
+        """
+        Creates the data based on a single trivalent nitrogen atom and its
+        connections
+        """
+        self.data = [None, None, None]
+        self._precision = precision
+
+        for i, bond in enumerate(tri_n.GetBonds()):
+            atom = bond.GetEnd() if bond.GetBgn() == tri_n else bond.GetBgn()
+            atomic_num = atom.GetAtomicNum()
+            connectivity = atom.GetDegree()
+            aromaticity = atom.IsAromatic()
+            wbo = round(bond.GetData(DANCE_BOND_ORDER_KEY) /
+                        self._precision) * self._precision
+
+            self.data[i] = (atomic_num, connectivity, aromaticity, wbo)
+
+        self.data.sort()
+        self.data = tuple(self.data)
+
+    def __hash__(self):
+        return hash(self.data)
+
+    def __eq__(self, rhs):
+        return self.data == rhs.data
+
+    def __lt__(self, rhs):
+        return self.data < rhs.data
+
+    def __str__(self):
+        return ''.join(
+            f"#{d[0]}x{d[1]}{'a' if d[2] else ''}({d[3]})" for d in self.data)
 
 
 #
