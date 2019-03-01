@@ -160,6 +160,18 @@ def configure_logging(loglevel: str):
         format="%(levelname)s: %(message)s", level=numeric_level)
 
 
+def print_welcome(mode: str):
+    """Print a fun little message"""
+    print()
+    print(r"    |                         ")
+    print(r"  __|   __,   _  _    __   _  ")
+    print(r" /  |  /  |  / |/ |  /    |/  ")
+    print(r" \_/|_/\_/|_/  |  |_/\___/|__/")
+    print()
+    print(f"Welcome! You are using DANCE in {mode} mode")
+    print()
+
+
 def read_binaries(oebfiles: [str], binfiles: [str]
                  ) -> ([oechem.OEMol], [danceprops.DanceProperties]):
     """
@@ -225,6 +237,7 @@ def main():
         "SELECT": run_select,
     }
     if args["mode"] in run_mode:
+        print_welcome(args["mode"])
         run_mode[args["mode"]](args)
     else:
         raise RuntimeError(f"Invalid mode: {args['mode']}")
