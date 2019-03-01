@@ -163,10 +163,11 @@ def configure_logging(loglevel: str):
 def print_welcome(mode: str):
     """Print a fun little message"""
     print()
-    print("   |                         \n"
-          " __|   __,   _  _    __   _  \n"
-          "/  |  /  |  / |/ |  /    |/  \n"
-          "\_/|_/\_/|_/  |  |_/\___/|__/\n")
+    print(r"    |                         ")
+    print(r"  __|   __,   _  _    __   _  ")
+    print(r" /  |  /  |  / |/ |  /    |/  ")
+    print(r" \_/|_/\_/|_/  |  |_/\___/|__/")
+    print()
     print(f"Welcome! You are using DANCE in {mode} mode")
     print()
 
