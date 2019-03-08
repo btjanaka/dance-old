@@ -21,8 +21,8 @@ class DanceSelector(dancerunbase.DanceRunBase):
 
     Attributes:
         _mols: a list storing the molecules the class is currently handling
-        _properties: a list storing properties of the molecules (see
-                     danceprops.py for more info)
+        _properties: a list storing properties of the _mols (see
+                     danceprops for more info)
         _bin_size: size of bins for separating by Wiberg bond order
         _bins: a defaultdict mapping tuples of (Wiberg bond order bin,
                fingerprint) to a list of molecules; for bond order, bins are
@@ -31,6 +31,7 @@ class DanceSelector(dancerunbase.DanceRunBase):
                the range [3.00, 3.02)
         _wiberg_precision: value to which to round the Wiberg bond orders in
                            the fingerprint
+        _bin_select: how many molecules to select from each bin
     """
 
     #
@@ -39,13 +40,14 @@ class DanceSelector(dancerunbase.DanceRunBase):
 
     def __init__(self, mols: [oechem.OEMol],
                  properties: [danceprops.DanceProperties], bin_size: float,
-                 wiberg_precision: float):
+                 wiberg_precision: float, bin_select: int):
         super().__init__()
         self._mols = mols
         self._properties = properties
         self._bin_size = bin_size
         self._bins = defaultdict(list)
         self._wiberg_precision = wiberg_precision
+        self._bin_select = bin_select
 
     def run(self):
         """Performs all the molecule selection"""
@@ -53,7 +55,7 @@ class DanceSelector(dancerunbase.DanceRunBase):
         logging.info("STARTING SELECTING")
         self._add_fingerprints()
         self._separate_into_bins()
-        danceprops.clean_properties_list(self._mols, self._properties)
+        self._select_by_size()
         logging.info("FINISHED SELECTING")
 
     def get_data(self) -> ([oechem.OEMol], [danceprops.DanceProperties]):
@@ -115,6 +117,17 @@ class DanceSelector(dancerunbase.DanceRunBase):
         for bin_id in sorted_bins:
             logging.debug(
                 f"({bin_id[0]}, {bin_id[1]}) -> {len(self._bins[bin_id])} mols")
+
+    def _select_by_size(self):
+        """Selects the self._bin_select smallest molecules from each bin."""
+        selected = []
+        for b in self._bins:
+            self._bins[b].sort(key=lambda mol: mol.NumAtoms())
+            selected.extend(self._bins[b][:self._bin_select])
+        self._mols = selected
+
+        # Only retain properties of the selected molecules
+        danceprops.clean_properties_list(self._mols, self._properties)
 
     @staticmethod
     def _is_valid_molecule(mol: oechem.OEMol) -> bool:

@@ -128,6 +128,13 @@ def parse_commandline_flags() -> {str: "argument value"}:
         help=("value to which to round the Wiberg bond orders in the "
               "fingerprints; e.g. round to the nearest 0.02"))
     select_group.add_argument(
+        "--bin-select",
+        default=5,
+        metavar="INT",
+        type=int,
+        help=("specifies how many of the smallest molecules to select from "
+              "each bin, e.g. select the 5 smallest"))
+    select_group.add_argument(
         "--select-output-dir",
         default="select-output",
         metavar="DIRNAME",
@@ -227,7 +234,8 @@ def run_select(args):
     mols, properties = read_binaries(args["input_binaries"][0::2],
                                      args["input_binaries"][1::2])
     dselector = danceselector.DanceSelector(
-        mols, properties, args["select_bin_size"], args["wiberg_precision"])
+        mols, properties, args["select_bin_size"], args["wiberg_precision"],
+        args["bin_select"])
     dselector.run()
     mols, properties = dselector.get_data()
     dancesaver.mkdir_and_save(mols, properties, args["select_output_dir"])
