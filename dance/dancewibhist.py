@@ -4,7 +4,7 @@ import logging
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
-from dancelib import dancerunbase
+from dance import dancerunbase
 
 
 class DanceWibHist(dancerunbase.DanceRunBase):

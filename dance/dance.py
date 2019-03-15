@@ -5,16 +5,17 @@
 import argparse
 import logging
 import pickle
+import sys
 from openeye import oechem
-from dancelib import dancegenerator
-from dancelib import danceprops
-from dancelib import dancesaver
-from dancelib import danceselector
-from dancelib import dancewibhist
+from dance import dancegenerator
+from dance import danceprops
+from dance import dancesaver
+from dance import danceselector
+from dance import dancewibhist
 
 
 def parse_commandline_flags() -> {str: "argument value"}:
-    """Uses argparse to handle all parsing of command line flags."""
+    """Uses argparse to handle parsing of command line flags."""
     parser = argparse.ArgumentParser(
         description=(
             "Performs various functions for selecting molecules from a "
@@ -131,6 +132,11 @@ def parse_commandline_flags() -> {str: "argument value"}:
         default="select-output",
         metavar="DIRNAME",
         help="directory for saving the output - refer to beginning of this msg")
+
+    # Check for no arguments
+    if len(sys.argv) == 1:
+        parser.print_usage(sys.stderr)
+        sys.exit(1)
 
     args = vars(parser.parse_args())
 

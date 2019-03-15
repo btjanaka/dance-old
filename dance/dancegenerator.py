@@ -5,8 +5,8 @@ import logging
 import math
 from openeye import oechem
 from openeye import oequacpac
-from dancelib import danceprops
-from dancelib import dancerunbase
+from dance import danceprops
+from dance import dancerunbase
 
 #
 # Constants
@@ -101,10 +101,8 @@ class DanceGenerator(dancerunbase.DanceRunBase):
         """
         logging.info("Sorting molecules by Wiberg bond order")
 
-        self._mols.sort(
-            key=
-            lambda m: danceprops.get_dance_property(m, self._properties).tri_n_bond_order
-        )
+        self._mols.sort(key=lambda m: danceprops.get_dance_property(
+            m, self._properties).tri_n_bond_order)
 
     #
     # Private (utility)

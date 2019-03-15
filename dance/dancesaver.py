@@ -4,8 +4,8 @@ import logging
 import os
 import pickle
 from openeye import oechem
-from dancelib import danceprops
-from dancelib import dancerunbase
+from dance import danceprops
+from dance import dancerunbase
 
 
 def create_filenames_for_dir(dirname: str) -> {str: str}:
