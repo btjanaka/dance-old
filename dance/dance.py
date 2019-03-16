@@ -3,11 +3,15 @@
 # See README for more information.
 
 import argparse
+import glob
 import logging
 import math
+import os
 import pickle
 import sys
-import os
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from openeye import oechem
 from dance import dancegenerator
 from dance import danceprops
@@ -21,24 +25,29 @@ def parse_commandline_flags() -> {str: "argument value"}:
         description=(
             "Performs various functions for selecting molecules from a "
             "database. It will do the following based on the mode. "
-            "GENERATE - Take in directories of mol2 files, generate the "
+            "|GENERATE| - Take in directories of mol2 files, generate the "
             "initial set of molecules with a single trivalent nitrogen, and "
-            "write results to a directory. "
-            "PLOTHIST - Take in data files from the previous step and use "
-            "matplotlib to generate histograms of the Wiberg bond orders. "
-            "SELECT - Make a final selection of molecules from the ones "
-            "generated in the GENERATE step. Writes the smallest molecules "
-            "of a given \"fingerprint\" to a SMILES file. (See README for "
-            "more info about fingerprints. "
-            "Note that when a part of this script \"writes results to a "
-            "directory\", that means it generates a directory with the "
-            "following files: mols.smi - molecules from that step stored "
-            "in SMILES format, mols.oeb - the same molecules stored in OEB "
-            "(Openeye Binary) format, tri_n_data.csv - data about the "
-            "trivalent nitrogen in each molecule, tri_n_bonds.csv - data about "
-            "the bonds around the trivalent nitrogen in each molecule, "
+            "write results to a directory with the following files: "
+            "mols.smi - molecules stored in SMILES format, "
+            "mols.oeb - the same molecules stored in OEB (Openeye Binary) "
+            "format, "
+            "tri_n_data.csv - data about the trivalent nitrogen in each "
+            "molecule, "
+            "tri_n_bonds.csv - data about the bonds around the trivalent "
+            "nitrogen in each molecule, "
             "props.binary - binary storage of DanceProperties for the "
-            "molecules"),
+            "molecules. "
+            "|PLOTHIST| - Take in data files from the previous step and use "
+            "matplotlib to generate histograms of the Wiberg bond orders. "
+            "|SELECT| - Make a final selection of molecules from the ones "
+            "generated in the GENERATE step. Writes the smallest molecules "
+            "of a given \"bin\" to a SMILES file. (See README for "
+            "more info about bins.) "
+            "|SELECT-ANALYZE| - Provide statistics and visualizations of the "
+            "output from SELECT mode. Writes to the following files: "
+            "statistics.txt - facts about the number of molecules in each bin, "
+            "visualization.pdf - a bar graph of numbers of molecules in each "
+            "bin."),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     mode_agnostic = parser.add_argument_group(
@@ -122,7 +131,8 @@ def parse_commandline_flags() -> {str: "argument value"}:
         default=0.02,
         metavar="FLOAT",
         type=float,
-        help="bin size for separating molecules by Wiberg bond order")
+        help=("bin size for separating molecules by total Wiberg bond order "
+              "around the trivalent nitrogen"))
     select_group.add_argument(
         "--wiberg-precision",
         default=0.05,
@@ -143,6 +153,18 @@ def parse_commandline_flags() -> {str: "argument value"}:
         metavar="DIRNAME",
         help=("directory for writing SMILES files with molecules of each "
               "fingerprint"))
+
+    select_analyze_group = parser.add_argument_group("SELECT-ANALYZE args")
+    select_analyze_group.add_argument(
+        "--select-analyze-dir",
+        default="select-output",
+        metavar="DIR",
+        help="directory containing output from SELECT mode")
+    select_analyze_group.add_argument(
+        "--select-analyze-output-dir",
+        default="select-analyze-output",
+        metavar="FILENAME.pdf",
+        help="directory for saving analysis")
 
     # Check for no arguments
     if len(sys.argv) == 1:
@@ -285,6 +307,63 @@ def run_select(args):
 
 
 #
+# SELECT-ANALYZE mode
+#
+
+
+def write_data_to_pdf(bin_count: {str: int}, dirname: str):
+    """
+    Writes statistics and visualizations about the molecule bins to a text and
+    and PDF file in the given directory.
+    """
+    logging.info(f"Writing results to {dirname}")
+
+    os.makedirs(dirname, exist_ok=True)
+    text = open(dirname + "/statistics.txt", "w")
+    pdf = PdfPages(dirname + "/visualization.pdf")
+
+    max_count = max(bin_count.values())
+    text.write(f"Max mols in a bin: {max_count}\n")
+    text.write(f"These bin(s) have the max mols:\n")
+    for bin_name, count in bin_count.items():
+        if count == max_count:
+            text.write(f"  {bin_name}\n")
+
+    plt.rcParams.update({'font.size': 6})
+    plt.rcParams.update({'figure.figsize': (15, int(len(bin_count) * .15))})
+    fig, ax = plt.subplots()
+    bins = sorted(bin_count, key=lambda b: float(b.split(',')[0]))
+    y_pos = np.arange(len(bins))
+    counts = np.array([bin_count[b] for b in bins], dtype=int)
+    ax.barh(y_pos, counts)
+    ax.set_title("Number of molecules in each bin")
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(bins)
+    ax.invert_yaxis()
+    ax.set_xlabel("Count")
+    pdf.savefig(fig)
+
+    text.close()
+    pdf.close()
+
+
+def run_select_analyze(args):
+    """Runs some analysis on output from SELECT mode and generates a PDF."""
+    logging.info("STARTING SELECT-ANALYZE")
+
+    bin_count = {}
+    for smi_file in glob.glob(args["select_analyze_dir"] + "/*.smi"):
+        bin_name = smi_file[len(args["select_analyze_dir"]) +
+                            1:-4]  # exclude directory name and ".smi"
+        istream = oechem.oemolistream(smi_file)
+        istream.SetFormat(oechem.OEFormat_USM)
+        bin_count[bin_name] = sum(1 for mol in istream.GetOEMols())
+    write_data_to_pdf(bin_count, args["select_analyze_output_dir"])
+
+    logging.info("FINISHED SELECT-ANALYZE")
+
+
+#
 # Main
 #
 
@@ -297,6 +376,7 @@ def main():
         "GENERATE": run_generator,
         "PLOTHIST": run_plothist,
         "SELECT": run_select,
+        "SELECT-ANALYZE": run_select_analyze,
     }
     if args["mode"] in run_mode:
         print_welcome(args["mode"])
