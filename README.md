@@ -4,6 +4,7 @@
 
 - [Installation](#installation)
 - [Output Directories](#output-directories)
+- [Fingerprints](#fingerprints)
 - [Usage](#usage)
   - [Example](#example)
     - [GENERATE mode](#generate-mode)
@@ -33,13 +34,10 @@ The heart of the tool is `dance.py`. It should be used as follows:
    - `output-histogram.pdf`: a PDF file holding histograms of the bond orders in
      every output-tri-n-data.csv file you pass in, as well as a histogram of the
      bond orders in all files combined (put on one plot together)
-3. Use SELECT mode to make a final selection of molecules. This mode puts
-   molecules into "bins" based on total Wiberg bond order around the trivalent
-   nitrogen, as well as a "fingerprint" consisting of the atomic number,
-   connectivity, aromaticity, and Wiberg bond order of the atoms connected to
-   the trivalent nitrogen. It then selects the smallest molecules in each bin
-   and generates an [output directory](#output-directories) with the final
-   selected molecules.
+3. Use SELECT mode to make a final selection of molecules. This mode creates a
+   directory with SMILES files corresponding to certain molecule
+   [fingerprints](#fingerprints). Each file contains the n (specified on the
+   command line) smallest molecules with that fingerprint.
 
 ## Installation
 
@@ -67,10 +65,20 @@ of files.
 - `props.binary`: binary file for storing list of DanceProperties with
   data about the molecules
 
-## Usage
+## Fingerprints
 
-Below is the help message for dance.py. Adding `python` before the
-invocation of dance.py is optional.
+During SELECT mode, molecules are separated by two criteria. The first is a
+rounded total of the Wiberg bond orders of the bonds around the trivalent
+nitrogen in the molecule. The second is a "fingerprint", which attempts to
+describe the environment around the trivalent nitrogen via several
+characteristics of each bond:
+
+- atomic number of the atom at the end of the bond - what element the atom is
+- connectivity of the atom at the end of the bond - how many other atoms the
+  atom is connected to (including 1 for the trivalent nitrogen)
+- rounded Wiberg bond order of the bond
+
+## Usage
 
 ```
 usage: dance [-h] [--mode MODE] [--log LEVEL] [--mol2dirs DIR1,DIR2,...]
@@ -87,11 +95,12 @@ generate the initial set of molecules with a single trivalent nitrogen, and
 write results to a directory. PLOTHIST - Take in data files from the previous
 step and use matplotlib to generate histograms of the Wiberg bond orders.
 SELECT - Make a final selection of molecules from the ones generated in the
-GENERATE step and write results to a directory. Note that when a part of this
-script "writes results to a directory", that means it generates a directory
-with the following files: mols.smi - molecules from that step stored in SMILES
-format, mols.oeb - the same molecules stored in OEB (Openeye Binary) format,
-tri_n_data.csv - data about the trivalent nitrogen in each molecule,
+GENERATE step. Writes the smallest molecules of a given "fingerprint" to a
+SMILES file. (See README for more info about fingerprints. Note that when a
+part of this script "writes results to a directory", that means it generates a
+directory with the following files: mols.smi - molecules from that step stored
+in SMILES format, mols.oeb - the same molecules stored in OEB (Openeye Binary)
+format, tri_n_data.csv - data about the trivalent nitrogen in each molecule,
 tri_n_bonds.csv - data about the bonds around the trivalent nitrogen in each
 molecule, props.binary - binary storage of DanceProperties for the molecules
 
@@ -146,8 +155,8 @@ SELECT args:
   --bin-select INT      specifies how many of the smallest molecules to select
                         from each bin, e.g. select the 5 smallest (default: 5)
   --select-output-dir DIRNAME
-                        directory for saving the output - refer to beginning
-                        of this msg (default: select-output)
+                        directory for writing SMILES files with molecules of
+                        each fingerprint (default: select-output)
 ```
 
 ### Example
@@ -189,8 +198,8 @@ dance.py --mode SELECT \
 ```
 
 Reads in molecules and their properties from mol1.oeb, prop1.binary, mol2.oeb,
-and prop2.binary, selects the 3 smallest molecules from each bin, and writes the
-results to files in a directory called my-output.
+and prop2.binary, selects the 3 smallest molecules from each bin, and writes
+molecules of each fingerprint to files in a directory called my-output.
 
 ## A Note on Logging
 
