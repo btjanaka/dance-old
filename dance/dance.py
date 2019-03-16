@@ -323,22 +323,30 @@ def write_data_to_pdf(bin_count: {str: int}, dirname: str):
     pdf = PdfPages(dirname + "/visualization.pdf")
 
     max_count = max(bin_count.values())
+    sorted_bins = sorted(bin_count, key=lambda b: float(b.split(',')[0]))
+
     text.write(f"Max mols in a bin: {max_count}\n")
     text.write(f"These bin(s) have the max mols:\n")
-    for bin_name, count in bin_count.items():
-        if count == max_count:
+    for bin_name in sorted_bins:
+        if bin_count[bin_name] == max_count:
             text.write(f"  {bin_name}\n")
+    text.write("\n")
+    name_width = max(len(b) for b in bin_count)
+    count_width = len(str(max(c for c in bin_count.values())))
+    text.write("Bins and number of molecules in each bin:\n")
+    for bin_name in sorted_bins:
+        text.write(
+            f"{bin_name:<{name_width}}: {bin_count[bin_name]:>{count_width}}\n")
 
     plt.rcParams.update({'font.size': 6})
     plt.rcParams.update({'figure.figsize': (15, int(len(bin_count) * .15))})
     fig, ax = plt.subplots()
-    bins = sorted(bin_count, key=lambda b: float(b.split(',')[0]))
-    y_pos = np.arange(len(bins))
-    counts = np.array([bin_count[b] for b in bins], dtype=int)
+    y_pos = np.arange(len(sorted_bins))
+    counts = np.array([bin_count[b] for b in sorted_bins], dtype=int)
     ax.barh(y_pos, counts)
     ax.set_title("Number of molecules in each bin")
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(bins)
+    ax.set_yticklabels(sorted_bins)
     ax.invert_yaxis()
     ax.set_xlabel("Count")
     pdf.savefig(fig)
