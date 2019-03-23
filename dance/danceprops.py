@@ -163,16 +163,24 @@ class DanceFingerprint:
         return self.data == rhs.data
 
     def __lt__(self, rhs):
+        """Somewhat arbitrary, allows some form of organization when sorting"""
         return self.data < rhs.data
 
     def __str__(self):
-        return ''.join(
-            f"#{d[0]}x{d[1]}{'a' if d[2] else ''}({d[3]})" for d in self.data)
+        return ''.join(f"#{d[0]}x{d[1]}{'a' if d[2] else ''}({d[3]:.2f})"
+                       for d in self.data)
 
 
 #
 # Functions
 #
+
+
+def set_dance_property(mol: oechem.OEMol, key: int):
+    """
+    Sets the DANCE_PROPS_KEY data of a molecule.
+    """
+    mol.SetData(DANCE_PROPS_KEY, key)
 
 
 def add_dance_property(mol: oechem.OEMol, prop: DanceProperties,
@@ -195,17 +203,11 @@ def get_dance_property(mol: oechem.OEMol,
     return properties[key]
 
 
-def set_dance_property(mol: oechem.OEMol, key: int):
-    """
-    Sets the DANCE_PROPS_KEY data of a molecule.
-    """
-    mol.SetData(DANCE_PROPS_KEY, key)
-
-
 def clean_properties_list(mols: [oechem.OEMol], properties: [DanceProperties]):
     """
-    Modifies the given molecules and properties in-place to remove any
-    properties not being used anymore.
+    Modifies the given molecules and properties in-place to reorder the
+    properties such that indices between molecules and properties match up; e.g.
+    mols[0] has a property at properties[0]. Unused properties are also removed.
     """
     props_copy = properties.copy()
     properties.clear()
@@ -223,6 +225,8 @@ def append_properties_list(mols: [oechem.OEMol], properties: [DanceProperties],
     correct properties.
     """
     for i in range(len(mols2)):
-        set_dance_property(mols2[i], len(mols) + i)
+        # Simply add an offset to the current key
+        set_dance_property(mols2[i],
+                           len(mols) + mols2[i].GetData(DANCE_PROPS_KEY))
     mols.extend(mols2)
     properties.extend(properties2)
