@@ -39,15 +39,16 @@ def parse_commandline_flags() -> {str: "argument value"}:
             "molecules. "
             "|PLOTHIST| - Take in data files from the previous step and use "
             "matplotlib to generate histograms of the Wiberg bond orders. "
-            "|SELECT| - Make a final selection of molecules from the ones "
-            "generated in the GENERATE step. Writes the smallest molecules "
-            "of a given \"bin\" to a SMILES file. (See README for "
-            "more info about bins.) "
+            "|SELECT| - Separate molecules from the GENERATE step into bins "
+            "based on their rounded total Wiberg bond order and "
+            "\"fingerprint\". (See README for more info about bins.) "
             "|SELECT-ANALYZE| - Provide statistics and visualizations of the "
             "output from SELECT mode. Writes to the following files: "
             "statistics.txt - facts about the number of molecules in each bin, "
             "visualization.pdf - a bar graph of numbers of molecules in each "
-            "bin."),
+            "bin. "
+            "|SELECT-FINAL| - Selects the smallest molecules from each bin made "
+            "in SELECT mode. Writes these molecules to a SMILES file. "),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     mode_agnostic = parser.add_argument_group(
@@ -141,13 +142,6 @@ def parse_commandline_flags() -> {str: "argument value"}:
         help=("value to which to round the Wiberg bond orders in the "
               "fingerprints; e.g. round to the nearest 0.02"))
     select_group.add_argument(
-        "--bin-select",
-        default=5,
-        metavar="INT",
-        type=int,
-        help=("specifies how many of the smallest molecules to select from "
-              "each bin, e.g. select the 5 smallest"))
-    select_group.add_argument(
         "--select-output-dir",
         default="select-output",
         metavar="DIRNAME",
@@ -163,8 +157,25 @@ def parse_commandline_flags() -> {str: "argument value"}:
     select_analyze_group.add_argument(
         "--select-analyze-output-dir",
         default="select-analyze-output",
-        metavar="FILENAME.pdf",
+        metavar="DIR",
         help="directory for saving analysis")
+
+    select_final_group = parser.add_argument_group("SELECT-FINAL args")
+    select_final_group.add_argument(
+        "--select-final-n",
+        default=1,
+        metavar="N",
+        type=int,
+        help="how many molecules to select from each bin")
+    select_final_group.add_argument(
+        "--select-final-dir",
+        default="select-output",
+        metavar="DIR",
+        help="directory from SELECT mode with smi files of molecules")
+    select_final_group.add_argument(
+        "--select-final-output-file",
+        default="select-final.smi",
+        help="output file for final selection of molecules")
 
     # Check for no arguments
     if len(sys.argv) == 1:
@@ -183,7 +194,8 @@ def parse_commandline_flags() -> {str: "argument value"}:
             comma_sep_list].split(",")
 
     # Check file extensions and append them if necessary
-    for arg, extension in (("output_histograms", "pdf"),):
+    for arg, extension in (("output_histograms", "pdf"),
+                           ("select_final_output_file", "smi")):
         if not args[arg].endswith("." + extension):
             args[arg] += "." + extension
 
@@ -201,14 +213,14 @@ def configure_logging(loglevel: str):
 
 def print_welcome(mode: str):
     """Print a fun little message"""
-    print()
-    print(r"    |                         ")
-    print(r"  __|   __,   _  _    __   _  ")
-    print(r" /  |  /  |  / |/ |  /    |/  ")
-    print(r" \_/|_/\_/|_/  |  |_/\___/|__/")
-    print()
-    print(f"Welcome! You are using DANCE in {mode} mode")
-    print()
+    logging.info("")
+    logging.info(r"    |                         ")
+    logging.info(r"  __|   __,   _  _    __   _  ")
+    logging.info(r" /  |  /  |  / |/ |  /    |/  ")
+    logging.info(r" \_/|_/\_/|_/  |  |_/\___/|__/")
+    logging.info("")
+    logging.info(f"Welcome! You are using DANCE in {mode} mode")
+    logging.info("")
 
 
 #
@@ -372,6 +384,40 @@ def run_select_analyze(args):
 
 
 #
+# SELECT-FINAL mode
+#
+
+
+def run_select_final(args):
+    """Generates an SMI file with final selected molecules from SELECT mode."""
+    logging.info("STARTING SELECT-FINAL")
+
+    directory = args["select_final_dir"]
+    output_file = args["select_final_output_file"]
+    ofs = oechem.oemolostream(output_file)
+    n = args["select_final_n"]
+
+    logging.info(
+        f"Reading molecules in {directory}, selecting and writing to {output_file}"
+    )
+
+    for f in glob.iglob(f"{directory}/*.smi"):
+        ifs = oechem.oemolistream(f)
+        mols = []
+        mol = oechem.OEMol()
+        while oechem.OEReadMolecule(ifs, mol):
+            mols.append(oechem.OEMol(mol))
+        ifs.close()
+        logging.debug(f"Found {len(mols)} mols in {f}")
+        mols.sort(key=lambda m: m.NumAtoms())
+        for m in mols[:n]:
+            oechem.OEWriteMolecule(ofs, m)
+    ofs.close()
+
+    logging.info("FINISHED SELECT-FINAL")
+
+
+#
 # Main
 #
 
@@ -385,6 +431,7 @@ def main():
         "PLOTHIST": run_plothist,
         "SELECT": run_select,
         "SELECT-ANALYZE": run_select_analyze,
+        "SELECT-FINAL": run_select_final,
     }
     if args["mode"] in run_mode:
         print_welcome(args["mode"])
